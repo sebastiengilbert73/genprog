@@ -178,6 +178,10 @@ class Interpreter(abc.ABC):
     def CreateConstant(self, returnType: str, parametersList: Optional[ List[Any] ] ) -> str:
         pass
 
+    @abc.abstractmethod
+    def PossibleTypes(self) -> List[str]:
+        pass
+
     def CheckIfSignatureMatches(self, functionName: str, argumentsList: List[ET.Element], variableNameToTypeDict: Dict[str, str],
                                 expectedReturnType) -> None:
         if functionName not in self._functionNameToSignatureDict:
@@ -300,6 +304,46 @@ class Interpreter(abc.ABC):
         individual: Individual = Individual(ET.ElementTree(root))
         return individual
 
+    def Mutate(self,
+               individual: Individual,
+               levelToFunctionProbabilityDict: Dict[int, float],
+               proportionOfConstants: float,
+               functionNameToWeightDict: Optional[Dict[str, float] ],
+               constantCreationParametersList: List[Any],
+               variableNameToTypeDict: Dict[str, str]
+               ) -> Individual:
+        if functionNameToWeightDict is None:
+            functionNameToWeightDict = {}
+            for functionName, signature in self._functionNameToSignatureDict.items():
+                functionNameToWeightDict[functionName] = 1.0
+        # Randomly select an element
+        pivotElementReturnType: str = random.choice(self.PossibleTypes())
+        candidateElementsList = ElementsWhoseReturnTypeIs(individual, pivotElementReturnType, self, variableNameToTypeDict)
+        if len(candidateElementsList) == 0: # Don't mutate
+            return individual
+        pivotElement: ET.Element = random.choice(candidateElementsList)
+        mutatedElement: ET.Element = self.CreateElement(pivotElementReturnType,
+                                                        0,
+                                                        levelToFunctionProbabilityDict,
+                                                        proportionOfConstants,
+                                                        functionNameToWeightDict,
+                                                        constantCreationParametersList,
+                                                        variableNameToTypeDict)
+
+        parent_map: Dict[ET.Element, ET.Element] = {c: p for p in individual._tree.iter() for c in
+                                                    p}  # Cf. https://stackoverflow.com/questions/2170610/access-elementtree-node-parent-node
+        pivotParentElm = parent_map[pivotElement]
+        # What is the child index?
+        childNdx: int = -1
+        for candidateChildNdx in range(len(list(pivotParentElm))):
+            if pivotParentElm[candidateChildNdx] == pivotElement:
+                childNdx = candidateChildNdx
+        if childNdx == -1:
+            raise ValueError(
+                "Interpreter.Mutate(): The child element could not be found in its parent children...(?)")
+        # Replace the pivot
+        pivotParentElm[childNdx] = mutatedElement
+        return individual
 
 
 def ElementsWhoseReturnTypeIs(individual: Individual, returnType: str, interpreter: Interpreter, variableNameToTypeDict: Dict[str, str]):
@@ -402,6 +446,30 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
                 return floatArg1
             else:
                 return floatArg2
+        elif functionName == 'sin':
+            try:
+                floatArg1 = float(argumentsList[0])
+                return math.sin(floatArg1)
+            except:
+                return 0.0
+        elif functionName == 'cos':
+            try:
+                floatArg1 = float(argumentsList[0])
+                return math.cos(floatArg1)
+            except:
+                return 0.0
+        elif functionName == 'tan':
+            try:
+                floatArg1 = float(argumentsList[0])
+                return math.tan(floatArg1)
+            except:
+                return 0.0
+        elif functionName == 'sigmoid':
+            floatArg1 = float(argumentsList[0])
+            try:
+                return 1.0 / (1.0 + math.exp(-floatArg1))
+            except:
+                return 0.0
         else:
             raise NotImplementedError("ArithmeticsInterpreter.FunctionDefinition(): Not implemented function '{}'".format(functionName))
 
@@ -423,6 +491,8 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
         else:
             raise NotImplementedError("ArithmeticsInterpreter.CreateConstant(): Not implemented return type '{}'".format(returnType))
 
+    def PossibleTypes(self) -> List[str]:
+        return ['float', 'bool']
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s %(levelname)s %(message)s')
