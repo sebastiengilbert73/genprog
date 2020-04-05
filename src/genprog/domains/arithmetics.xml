@@ -70,4 +70,24 @@
 		<parameter_types>[bool, float, float]</parameter_types>
 		<return_type>float</return_type>
 	</function>
+	<function>
+		<name>sin</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>cos</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>tan</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>sigmoid</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
 </arithmetics>
