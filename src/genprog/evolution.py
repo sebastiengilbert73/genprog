@@ -6,6 +6,9 @@ import abc
 import random
 import math
 import copy
+import xml.etree.ElementTree as ET
+import sys
+import statistics
 
 class Population(abc.ABC):
     def __init__(self, individualsList: List[genprog.core.Individual]=None) -> None:
@@ -141,6 +144,97 @@ class Population(abc.ABC):
 
         return child
 
+    def Tournament(self, numberOfParticipants: int, individualToCostDict: Dict[genprog.core.Individual, float]) -> \
+            genprog.core.Individual:
+        if numberOfParticipants < 1:
+            raise ValueError("Population.Tournament(): numberOfParticipants ({}) < 1".format(numberOfParticipants))
+        participantsList: List[genprog.core.Individual] = []
+        for participantNdx in range(numberOfParticipants):
+            chosenParticipant = random.choice(self._individualsList)
+            participantsList.append(chosenParticipant)
+        lowestCost: float = sys.float_info.max
+        champion: Optional[genprog.core.Individual]
+        for participant in participantsList:
+            if individualToCostDict[participant] < lowestCost:
+                lowestCost = individualToCostDict[participant]
+                champion = participant
+        if champion is None:
+            raise ValueError("Population.Tournament(): champion is None... (?)")
+        return champion
+
+    def NewGenerationWithTournament(self,
+            inputOutputTuplesList: List[Tuple[Dict[str, Union[float, bool]], Union[float, bool]]],
+            variableNameToTypeDict: Dict[str, str],
+            interpreter: genprog.core.Interpreter,
+            returnType: str,
+            numberOfTournamentParticipants,
+            mutationProbability,
+            currentIndividualToCostDict: Optional[ Dict[genprog.core.Individual, float] ],
+            proportionOfConstants: float,
+            levelToFunctionProbabilityDict: Dict[int, float],
+            functionNameToWeightDict: Optional[ Dict[ str, float]],
+            constantCreationParametersList: List[Any],
+            maximumNumberOfMissedCreationTrials: int =1000) -> Dict[genprog.core.Individual, float]:
+        if currentIndividualToCostDict is None:
+            currentIndividualToCostDict = self.EvaluateIndividualCosts(
+                inputOutputTuplesList, variableNameToTypeDict, interpreter, returnType
+            )
+        if mutationProbability < 0:
+            mutationProbability = 0
+        if mutationProbability > 1:
+            mutationProbability = 1
+        newGenerationList: List[genprog.core.Individual] = []
+
+        typesList = interpreter.PossibleTypes()
+        numberOfIndividuals: int = len(self._individualsList)
+        numberOfMissedCreationTrials = 0
+        while len(newGenerationList) < numberOfIndividuals:
+            parent1: genprog.core.Individual = self.Tournament(numberOfTournamentParticipants, currentIndividualToCostDict)
+            parent2: genprog.core.Individual = self.Tournament(numberOfTournamentParticipants, currentIndividualToCostDict)
+            child = self.CreateChild(
+                parent1,
+                parent2,
+                random.choice(typesList),
+                interpreter,
+                variableNameToTypeDict
+            )
+            if child is not None:
+                # Determine if the child will mutate
+                randomNbr = random.random()
+                if randomNbr < mutationProbability:
+                    child = interpreter.Mutate(
+                        child,
+                        levelToFunctionProbabilityDict,
+                        proportionOfConstants,
+                        functionNameToWeightDict,
+                        constantCreationParametersList,
+                        variableNameToTypeDict
+                    )
+                newGenerationList.append(child)
+            else:
+                numberOfMissedCreationTrials += 1
+            if numberOfMissedCreationTrials >= maximumNumberOfMissedCreationTrials:
+                raise RuntimeError("Population.NewGenerationWithTournament(): Reached the maximum number of missed creation trials: {}".format(maximumNumberOfMissedCreationTrials))
+        self._individualsList = newGenerationList
+        individualToCostDict = self.EvaluateIndividualCosts(
+            inputOutputTuplesList, variableNameToTypeDict, interpreter, returnType
+        )
+        return individualToCostDict
+
+    def MedianCost(self, individualToCostDict: Dict[genprog.core.Individual, float] ) -> float:
+        return statistics.median(individualToCostDict.values())
+
+    def Champion(self, individualToCostDict: Dict[genprog.core.Individual, float]) -> Tuple[genprog.core.Individual, float]:
+        lowestCost: float = sys.float_info.max
+        champion: Optional[genprog.core.Individual] = None
+        for individual, cost in individualToCostDict.items():
+            if cost < lowestCost:
+                lowestCost = cost
+                champion = individual
+        if champion is None:
+            raise ValueError("Population.Champion(): champion is None... (?)")
+        return (champion, lowestCost)
+
 
 class ArithmeticsPopulation(Population): # An example to follow for other domains
     def EvaluateIndividualCosts(self,
@@ -176,8 +270,8 @@ class ArithmeticsPopulation(Population): # An example to follow for other domain
                     try:
                         costSum += (individualOutput - targetOutput) ** 2
                     except OverflowError as error:
-                        logging.warning ("OverflowError: costSum = {}; individualOutput = {}; targetOutput = {}".format(
-                            costSum, individualOutput, targetOutput))
+                        #logging.warning ("OverflowError: costSum = {}; individualOutput = {}; targetOutput = {}".format(
+                        #    costSum, individualOutput, targetOutput))
                         anOverflowErrorOccurred = True
                 else:
                     raise NotImplementedError("ArithmeticsPopulation.EvaluateIndividualCosts(): Not implemented return type '{}'".format(returnType))
