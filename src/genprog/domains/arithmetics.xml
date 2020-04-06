@@ -86,7 +86,67 @@
 		<return_type>float</return_type>
 	</function>
 	<function>
+		<name>atan</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
 		<name>sigmoid</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>ispositive_float</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>bool</return_type>
+	</function>
+	<function>
+		<name>isinbetween_float</name>
+		<parameter_types>[float, float, float]</parameter_types>
+		<return_type>bool</return_type>
+	</function>
+	<function>
+		<name>inverse_float</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>abs_float</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>relu_float</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>sign_float</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>max_float</name>
+		<parameter_types>[float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>min_float</name>
+		<parameter_types>[float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>gaussian</name>
+		<parameter_types>[float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>pow2_float</name>
+		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>sqrt</name>
 		<parameter_types>[float]</parameter_types>
 		<return_type>float</return_type>
 	</function>
