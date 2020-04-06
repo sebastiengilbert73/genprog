@@ -393,7 +393,7 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
         elif functionName == "division_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            if floatArg2 == 0: #
+            if floatArg2 == 0:
                 return 0.0
             return floatArg1 / floatArg2
         elif functionName == "greaterThan_float":
@@ -464,11 +464,80 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
                 return math.tan(floatArg1)
             except:
                 return 0.0
+        elif functionName == 'atan':
+            floatArg1 = float(argumentsList[0])
+            return math.atan(floatArg1)
         elif functionName == 'sigmoid':
             floatArg1 = float(argumentsList[0])
             try:
                 return 1.0 / (1.0 + math.exp(-floatArg1))
             except:
+                return 0.0
+        elif functionName == 'ispositive_float':
+            floatArg1 = float(argumentsList[0])
+            return floatArg1 >= 0.0
+        elif functionName == 'inverse_float':
+            floatArg1 = float(argumentsList[0])
+            try:
+                if floatArg1 == 0:
+                    return 0
+                else:
+                    return 1.0/floatArg1
+            except:
+                return 0.0
+        elif functionName == 'isinbetween_float':
+            floatArg1 = float(argumentsList[0])
+            floatArg2 = float(argumentsList[1])
+            floatArg3 = float(argumentsList[2])
+            if floatArg1 >= floatArg2 and floatArg1 <= floatArg3:
+                return True
+            else:
+                return False
+        elif functionName == 'abs_float':
+            floatArg1 = float(argumentsList[0])
+            return abs(floatArg1)
+        elif functionName == 'relu_float':
+            floatArg1 = float(argumentsList[0])
+            if floatArg1 >= 0:
+                return floatArg1
+            else:
+                return 0.0
+        elif functionName == 'sign_float':
+            floatArg1 = float(argumentsList[0])
+            if floatArg1 < 0:
+                return -1.0
+            elif floatArg1 > 0:
+                return 1.0
+            else:
+                return 0.0
+        elif functionName == 'max_float':
+            floatArg1 = float(argumentsList[0])
+            floatArg2 = float(argumentsList[1])
+            return max(floatArg1, floatArg2)
+        elif functionName == 'min_float':
+            floatArg1 = float(argumentsList[0])
+            floatArg2 = float(argumentsList[1])
+            return min(floatArg1, floatArg2)
+        elif functionName == 'gaussian':
+            floatArg1 = float(argumentsList[0])
+            floatArg2 = float(argumentsList[1])
+            try:
+                sigma2 = floatArg2 ** 2
+                f = math.exp(-(floatArg1 ** 2)/(2 * sigma2) )
+                return f
+            except:
+                return 0.0
+        elif functionName == 'pow2_float':
+            floatArg1 = float(argumentsList[0])
+            try:
+                return floatArg1 ** 2
+            except:
+                return 0.0
+        elif functionName == 'sqrt':
+            floatArg1 = float(argumentsList[0])
+            if floatArg1 >= 0:
+                return math.sqrt(floatArg1)
+            else:
                 return 0.0
         else:
             raise NotImplementedError("ArithmeticsInterpreter.FunctionDefinition(): Not implemented function '{}'".format(functionName))
