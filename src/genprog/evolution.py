@@ -58,20 +58,23 @@ class Population(abc.ABC):
     def EvaluateIndividualCosts(self, inputOutputTuplesList: List[ Tuple[ Dict[str, Any], Any ] ],
                                 variableNameToTypeDict: Dict[str, str],
                                 interpreter: genprog.core.Interpreter,
-                                returnType: str) -> Dict[genprog.core.Individual, float]:
+                                returnType: str,
+                                weightForNumberOfElements: float) -> Dict[genprog.core.Individual, float]:
         pass
 
     def SelectTwoIndividualsWithCostInverse(self,
                                             inputOutputTuplesList: List[Tuple[Dict[str, Any], Any]],
                                             variableNameToTypeDict: Dict[str, str],
                                             interpreter: genprog.core.Interpreter,
-                                            returnType: str) -> Tuple[genprog.core.Individual, genprog.core.Individual]:
+                                            returnType: str,
+                                            weightForNumberOfElements: float) -> Tuple[genprog.core.Individual, genprog.core.Individual]:
         maximumFitness: float = 1000.0
         individualToCostDict: Dict[genprog.core.Individual, float] = self.EvaluateIndividualCosts(
             inputOutputTuplesList,
             variableNameToTypeDict,
             interpreter,
-            returnType
+            returnType,
+            weightForNumberOfElements
         )
         rouletteList: List[float] = []
         fitnessSum = 0.0
@@ -174,10 +177,13 @@ class Population(abc.ABC):
             levelToFunctionProbabilityDict: Dict[int, float],
             functionNameToWeightDict: Optional[ Dict[ str, float]],
             constantCreationParametersList: List[Any],
-            maximumNumberOfMissedCreationTrials: int =1000) -> Dict[genprog.core.Individual, float]:
+            proportionOfNewIndividuals=0.05,
+            weightForNumberOfElements=0.001,
+            maximumNumberOfMissedCreationTrials: int =1000,
+            ) -> Dict[genprog.core.Individual, float]:
         if currentIndividualToCostDict is None:
             currentIndividualToCostDict = self.EvaluateIndividualCosts(
-                inputOutputTuplesList, variableNameToTypeDict, interpreter, returnType
+                inputOutputTuplesList, variableNameToTypeDict, interpreter, returnType, weightForNumberOfElements
             )
         if mutationProbability < 0:
             mutationProbability = 0
@@ -187,6 +193,19 @@ class Population(abc.ABC):
 
         typesList = interpreter.PossibleTypes()
         numberOfIndividuals: int = len(self._individualsList)
+        # Generate new individuals
+        numberOfNewIndividuals: int = round(proportionOfNewIndividuals * numberOfIndividuals)
+        while len(newGenerationList) < numberOfNewIndividuals:
+            newIndividual: genprog.core.Individual = interpreter.CreateIndividual(
+                returnType,
+                levelToFunctionProbabilityDict,
+                proportionOfConstants,
+                constantCreationParametersList,
+                variableNameToTypeDict,
+                functionNameToWeightDict
+            )
+            newGenerationList.append(newIndividual)
+
         numberOfMissedCreationTrials = 0
         while len(newGenerationList) < numberOfIndividuals:
             parent1: genprog.core.Individual = self.Tournament(numberOfTournamentParticipants, currentIndividualToCostDict)
@@ -217,7 +236,7 @@ class Population(abc.ABC):
                 raise RuntimeError("Population.NewGenerationWithTournament(): Reached the maximum number of missed creation trials: {}".format(maximumNumberOfMissedCreationTrials))
         self._individualsList = newGenerationList
         individualToCostDict = self.EvaluateIndividualCosts(
-            inputOutputTuplesList, variableNameToTypeDict, interpreter, returnType
+            inputOutputTuplesList, variableNameToTypeDict, interpreter, returnType, weightForNumberOfElements
         )
         return individualToCostDict
 
@@ -241,7 +260,8 @@ class ArithmeticsPopulation(Population): # An example to follow for other domain
                                 inputOutputTuplesList: List[Tuple[Dict[str, Union[float, bool] ], Union[float, bool]]],
                                 variableNameToTypeDict: Dict[str, str],
                                 interpreter: genprog.core.Interpreter,
-                                returnType: str) -> Dict[genprog.core.Individual, float]:
+                                returnType: str,
+                                weightForNumberOfElements: float=0.001) -> Dict[genprog.core.Individual, float]:
         penaltyForNoVariation = 1.0e6
         penaltyForOverflowError = 1.0e9
         individualToCostDict = {}
@@ -268,7 +288,7 @@ class ArithmeticsPopulation(Population): # An example to follow for other domain
                 elif returnType == 'float':
 
                     try:
-                        costSum += (individualOutput - targetOutput) ** 2
+                        costSum += abs(individualOutput - targetOutput)# ** 2
                     except OverflowError as error:
                         #logging.warning ("OverflowError: costSum = {}; individualOutput = {}; targetOutput = {}".format(
                         #    costSum, individualOutput, targetOutput))
@@ -287,9 +307,19 @@ class ArithmeticsPopulation(Population): # An example to follow for other domain
                 individualToCostDict[individual] = costSum / len(inputOutputTuplesList)
                 if not aVariationWasDetected:
                     individualToCostDict[individual] = individualToCostDict[individual] + penaltyForNoVariation
+
+                # Add penalty for number of elements
+                numberOfElements = NumberOfElements(individual._tree)
+                individualToCostDict[individual] = individualToCostDict[individual] + weightForNumberOfElements * numberOfElements
+
         return individualToCostDict
 
 
 
-
+# Utilities
+def NumberOfElements(tree: ET.ElementTree) -> int:
+    count: int = 0
+    for elm in tree.iter():
+        count += 1
+    return count
 
