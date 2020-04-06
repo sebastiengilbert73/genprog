@@ -6,18 +6,21 @@ import math
 import argparse
 import xml.etree.ElementTree as ET
 import ast
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--datasetPrototype', help="The function prototype to generate the dataset. Default: 'sin'", default='sin')
 parser.add_argument('--numberOfSamples', help="The number of dataset samples to generate. Default: 1000", type=int, default=1000)
 parser.add_argument('--trainingProportion', help="The proportion of training samples [0, 1]. Default: 0.8", type=float, default=0.8)
-parser.add_argument('--numberOfIndividuals', help="The number of individuals in the population. Default: 100", type=int, default=100)
+parser.add_argument('--numberOfIndividuals', help="The number of individuals in the population. Default: 300", type=int, default=300)
 parser.add_argument('--levelToFunctionProbabilityDict', help="The level to function probability dict. Default: '{0: 1, 1: 0.9, 2: 0.9, 3: 0.5}'", default='{0: 1.0, 1: 0.9, 2: 0.9, 3: 0.5}')
-parser.add_argument('--proportionOfConstants', help='When choosing between a variable and a constant, probability to choose a constant. Default: 0.5', type=float, default=0.5)
+parser.add_argument('--proportionOfConstants', help='When choosing between a variable and a constant, probability to choose a constant. Default: 0.8', type=float, default=0.8)
 parser.add_argument('--constantCreationParametersList', help="The list of parameters that the interpreter will use to create a constant (CreateConstant()). In case of ArithmeticsInterpreter, it is [minValue, maxValue]. Default: '[-10, 10]'", default='[-10, 10]')
 parser.add_argument('--numberOfTournamentParticipants', help="The number of participants in a tournament. Default: 3", type=int, default=3)
 parser.add_argument('--numberOfGenerations', help="The number of generations. Default: 100", type=int, default=100)
-parser.add_argument('--mutationProbability', help='The probability to mutate a child. Default: 0.1', type=float, default=0.1)
+parser.add_argument('--mutationProbability', help='The probability to mutate a child. Default: 0.25', type=float, default=0.25)
+parser.add_argument('--proportionOfNewIndividuals', help='The proportion of new individuals created at each generation. Default: 0.05', type=float, default=0.05)
+parser.add_argument('--weightForNumberOfElements', help='The multiplicative factor to the number of elements, as a penalty for large trees. Default: 0.0001', type=float, default=0.0001)
 args = parser.parse_args()
 levelToFunctionProbabilityDict = ast.literal_eval(args.levelToFunctionProbabilityDict)
 constantCreationParametersList = ast.literal_eval(args.constantCreationParametersList)
@@ -35,6 +38,8 @@ def CreateDataset(prototype: str, numberOfSamples: int) -> List[Tuple[Dict[str, 
         outputValue: float = 0
         if prototype == 'sin':
             outputValue = math.sin(2 * math.pi * (x))# + y))
+        elif prototype == 'parabola':
+            outputValue = 6 * x**2 - 5 * x + 0.4
         else:
             raise NotImplementedError("CreateDataset(): Not implemented prototype '{}'".format(prototype))
         xyDictOutputValueTupleList.append((xyToValuesDict, outputValue))
@@ -111,7 +116,7 @@ def main() -> None:
         "generation,championTrainingCost,championValidationCost,medianTrainingCost,medianValidationCost\n")
     generationsCostFile.write('0,' + str(championTrainingCost) + ',' + str(championValidationCost) + ',' + str(medianTrainingCost) + ',' + str(medianValidationCost) + '\n')
 
-
+    lowestChampionValidationCost = sys.float_info.max
 
     for generationNdx in range(1, args.numberOfGenerations + 1):
         logging.info("Generation {}".format(generationNdx))
@@ -126,7 +131,9 @@ def main() -> None:
             args.proportionOfConstants,
             levelToFunctionProbabilityDict,
             None,
-            constantCreationParametersList
+            constantCreationParametersList,
+            args.proportionOfNewIndividuals,
+            args.weightForNumberOfElements
         )
         (champion, championTrainingCost) = population.Champion(training_individualToCostDict)
         medianTrainingCost = population.MedianCost(training_individualToCostDict)
@@ -144,7 +151,9 @@ def main() -> None:
         logging.info("championTrainingCost = {};    championValidationCost = {};    medianTrainingCost = {};    medianValidationCost = {}".format(championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost))
         generationsCostFile.write(
             str(generationNdx) + ',' + str(championTrainingCost) + ',' + str(championValidationCost) + ',' + str(medianTrainingCost) + ',' + str(medianValidationCost) + '\n')
-        champion.Save('./outputs/champion_' + str(generationNdx) + '.xml')
+        if championValidationCost < lowestChampionValidationCost:
+            champion.Save('./outputs/champion_' + str(generationNdx) + '.xml')
+            lowestChampionValidationCost = championValidationCost
 
         # Comparison file
         comparisonFile = open('./outputs/comparison.csv', 'w', buffering=1)
