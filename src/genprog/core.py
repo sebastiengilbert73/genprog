@@ -169,6 +169,35 @@ class Interpreter(abc.ABC):
                 childrenEvaluationsList.append(childEvaluation)
             return self.FunctionDefinition(elementTag, childrenEvaluationsList)
 
+    def EvaluateElements(self, element: ET.Element, variableNameToTypeDict: Dict[str, str], variableNameToValueDict: Dict[str, Any],
+                        expectedReturnType: Any, elementToEvaluationDict: Dict[ET.Element, Any]) -> Dict[ET.Element, Any]:
+        childrenList: List[ET.Element] = list(element)
+        elementTag = element.tag
+
+        if elementTag == 'constant':
+            valueStr: Optional[str] = element.text
+            if valueStr is None:
+                raise ValueError("Interpreter.EvaluateElement(): A constant has no value")
+            elementToEvaluationDict[element] = self.TypeConverter(expectedReturnType, valueStr)
+            return elementToEvaluationDict
+        elif elementTag == 'variable':
+            variableName: Optional[str] = element.text
+            if variableName is None:
+                raise ValueError("Interpreter.EvaluateElement(): A variable has no name")
+            if variableName not in variableNameToValueDict:
+                raise KeyError("Interpreter.EvaluateElement(): Variable '{}' doesn't exist as a key in variableNameToValueDict".format(variableName))
+            elementToEvaluationDict[element] = variableNameToValueDict[variableName]
+            return elementToEvaluationDict
+        else: # Function
+            self.CheckIfSignatureMatches(elementTag, childrenList, variableNameToTypeDict, expectedReturnType)
+            childrenEvaluationsList: List[Any] = []
+            for childNdx in range(len(childrenList)):
+                childExpectedReturnType = self._functionNameToSignatureDict[elementTag]._parameterTypesList[childNdx]
+                elementToEvaluationDict = self.EvaluateElements(childrenList[childNdx], variableNameToTypeDict, variableNameToValueDict, childExpectedReturnType,
+                                                                elementToEvaluationDict)
+                childrenEvaluationsList.append(elementToEvaluationDict[ childrenList[childNdx] ])
+            elementToEvaluationDict[element] = self.FunctionDefinition(elementTag, childrenEvaluationsList)
+            return elementToEvaluationDict
 
     @abc.abstractmethod
     def FunctionDefinition(self, functionName: str, argumentsList: List[Any]) -> Any:
