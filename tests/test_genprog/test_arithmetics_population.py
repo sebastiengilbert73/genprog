@@ -93,7 +93,7 @@ def main() -> None:
         returnType
     )
 
-    (champion, championTrainingCost) = population.Champion(training_individualToCostDict)
+    (trainingChampion, championTrainingCost) = population.Champion(training_individualToCostDict)
     medianTrainingCost: float = population.MedianCost(training_individualToCostDict)
 
     # Validation cost
@@ -103,8 +103,8 @@ def main() -> None:
         interpreter,
         returnType
     )
+    (validationChampion, championValidationCost) = population.Champion(validation_individualToCostDict)
     medianValidationCost = population.MedianCost(validation_individualToCostDict)
-    championValidationCost = validation_individualToCostDict[champion]
 
     logging.info(
         "championTrainingCost = {};    championValidationCost = {};    medianTrainingCost = {};    medianValidationCost = {}".format(
@@ -135,7 +135,7 @@ def main() -> None:
             args.proportionOfNewIndividuals,
             args.weightForNumberOfElements
         )
-        (champion, championTrainingCost) = population.Champion(training_individualToCostDict)
+        (trainingChampion, championTrainingCost) = population.Champion(training_individualToCostDict)
         medianTrainingCost = population.MedianCost(training_individualToCostDict)
 
         # Validation cost
@@ -145,14 +145,14 @@ def main() -> None:
         interpreter,
         returnType
         )
+        (validationChampion, championValidationCost) = population.Champion(validation_individualToCostDict)
         medianValidationCost = population.MedianCost(validation_individualToCostDict)
-        championValidationCost = validation_individualToCostDict[champion]
 
         logging.info("championTrainingCost = {};    championValidationCost = {};    medianTrainingCost = {};    medianValidationCost = {}".format(championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost))
         generationsCostFile.write(
             str(generationNdx) + ',' + str(championTrainingCost) + ',' + str(championValidationCost) + ',' + str(medianTrainingCost) + ',' + str(medianValidationCost) + '\n')
         if championValidationCost < lowestChampionValidationCost:
-            champion.Save('./outputs/champion_' + str(generationNdx) + '.xml')
+            validationChampion.Save('./outputs/champion_' + str(generationNdx) + '.xml')
             lowestChampionValidationCost = championValidationCost
 
         # Comparison file
@@ -162,7 +162,7 @@ def main() -> None:
         for xTarget in validationDatasetList:
             x = xTarget[0]['x']
             target = xTarget[1]
-            prediction = interpreter.Evaluate( champion, variableNameToTypeDict, xTarget[0], returnType)
+            prediction = interpreter.Evaluate( validationChampion, variableNameToTypeDict, xTarget[0], returnType)
             comparisonFile.write(str(x) + ',' + str(target) + ',' + str(prediction) + '\n')
 
 
