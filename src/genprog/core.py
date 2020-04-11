@@ -170,7 +170,9 @@ class Interpreter(abc.ABC):
             return self.FunctionDefinition(elementTag, childrenEvaluationsList)
 
     def EvaluateElements(self, element: ET.Element, variableNameToTypeDict: Dict[str, str], variableNameToValueDict: Dict[str, Any],
-                        expectedReturnType: Any, elementToEvaluationDict: Dict[ET.Element, Any]) -> Dict[ET.Element, Any]:
+                        expectedReturnType: Any, elementToEvaluationDict: Dict[ET.Element, Any]=None) -> Dict[ET.Element, Any]:
+        if elementToEvaluationDict is None:
+            elementToEvaluationDict = {}
         childrenList: List[ET.Element] = list(element)
         elementTag = element.tag
 
@@ -201,14 +203,15 @@ class Interpreter(abc.ABC):
 
     def Backpropagate(self, headElement: ET.Element,
                       elementToEvaluationDict: Dict[ET.Element, Any],
-                      elementToGradientDict: Dict[ET.Element, Any]) -> Dict[ET.Element, Any]:
+                      elementToGradientDict: Dict[ET.Element, Any]=None) -> Dict[ET.Element, Any]:
+        if elementToGradientDict is None: # The head of the tree: df1/df1 = 1.0
+            elementToGradientDict = {headElement: 1.0}
         childrenList: List[ET.Element] = list(headElement)
         headElementTag = headElement.tag
         if headElement not in elementToGradientDict.keys():
             raise KeyError("Backpropagate(): The head element is not found in elementToGradientDict.keys()")
         headElementGradient = elementToGradientDict[headElement]
         argumentsList: List[Any] = [elementToEvaluationDict[child] for child in childrenList]
-        childrenPartialDerivatives: List[Any] = []
         if headElementTag != 'constant' and headElementTag != 'variable':
             childrenPartialDerivatives = self.FunctionDerivative(headElementTag, argumentsList)
 
