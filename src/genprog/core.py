@@ -1,7 +1,7 @@
 import logging
 import abc
 import xml.etree.ElementTree as ET
-from typing import Dict, List, Any, Set, Optional, Union
+from typing import Dict, List, Any, Set, Tuple, Optional, Union
 import ast
 import math
 import random
@@ -25,6 +25,7 @@ class Individual():
     def Save(self, filepath: str):
         rootElm: ET.Element = self._tree.getroot()
         treeStr: str = prettify(rootElm)
+        treeStr = "".join([s for s in treeStr.splitlines(True) if s.strip()])
         with open(filepath, 'w') as file:
             file.write(treeStr)
 
@@ -400,6 +401,37 @@ class Interpreter(abc.ABC):
         pivotParentElm[childNdx] = mutatedElement
         return individual
 
+    def EpochOfTraining(self,
+                        individual: Individual,
+                        variableNameToTypeDict: Dict[str, str],
+                        expectedReturnType: str,
+                        trainingDataset: List[Tuple[Dict[str, Any], Any]],
+                        learningRate: float) -> Individual:
+        headElm: ET.Element = list(individual._tree.getroot())[0]
+        for (trainingXDict, targetOutput) in trainingDataset:
+            elementToEvaluationDict = self.EvaluateElements(
+                headElm,
+                variableNameToTypeDict,
+                trainingXDict,
+                expectedReturnType
+            )
+            delta = elementToEvaluationDict[headElm] - targetOutput
+
+            elementToGradientDict = self.Backpropagate(
+                headElm,
+                elementToEvaluationDict
+            )
+
+            for element, gradient in elementToGradientDict.items():
+                if element.tag == 'constant':
+                    initialValue = elementToEvaluationDict[element]
+                    try:
+                        newValue = initialValue - delta * learningRate * gradient
+                        element.text = str(newValue)
+                    except: # The value type is not appropriate for updating. Ex.: bool
+                        pass
+        return individual
+
 
 def ElementsWhoseReturnTypeIs(individual: Individual, returnType: str, interpreter: Interpreter, variableNameToTypeDict: Dict[str, str]):
     elementsList: List[ET.Element] = individual.Elements()
@@ -422,6 +454,7 @@ def ElementsWhoseReturnTypeIs(individual: Individual, returnType: str, interpret
             if functionReturnType == returnType:
                 elementsWithReturnTypeList.append(element)
     return elementsWithReturnTypeList
+
 
 
 
@@ -610,159 +643,157 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
             return [floatArg2 , floatArg1]
-        else:
-            raise NotImplementedError("ArithmeticsInterpreter.FunctionDerivative(): Not implemented function '{}'".format(functionName))
-        """
         elif functionName == "division_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
             if floatArg2 == 0:
-                return 0.0
-            return floatArg1 / floatArg2
+                return [0.0, 0.0]
+            return [1.0/floatArg2, -1.0 * floatArg1/(floatArg2**2)]
         elif functionName == "greaterThan_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            return floatArg1 > floatArg2
+            return [0.0 , 0.0]
         elif functionName == "greaterThanOrEqual_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            return floatArg1 >= floatArg2
+            return [0.0, 0.0]
         elif functionName == "lessThan_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            return floatArg1 < floatArg2
+            return [0.0, 0.0]
         elif functionName == "lessThanOrEqual_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            return floatArg1 <= floatArg2
+            return [0.0, 0.0]
         elif functionName == "almostEqual_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            floatArg3: float = abs( float(argumentsList[2]) )
-            return abs(floatArg1 - floatArg2) <= floatArg3
+            floatArg3: float = abs(float(argumentsList[2]))
+            return [0.0, 0.0, 0.0]
         elif functionName == "inverse_bool":
             boolArg1: bool = bool(argumentsList[0])
-            return not boolArg1
+            return [0.0]
         elif functionName == "log":
             floatArg1 = float(argumentsList[0])
-            if floatArg1 <= 0.0:
-                return 0.0
-            return math.log(floatArg1)
+            if floatArg1 == 0.0:
+                return [0.0]
+            return [1.0/floatArg1]
         elif functionName == "exp":
             floatArg1 = float(argumentsList[0])
             if floatArg1 >= 20.0:
-                return 0.0
-            return math.exp(floatArg1)
+                return [0.0]
+            return [math.exp(floatArg1)]
         elif functionName == "pow_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
             try:
-                result: float = math.pow(floatArg1, floatArg2)
-                return result
+                df_dx1: float = floatArg2 * math.pow(floatArg1, floatArg2 - 1)
+                df_dx2: float = math.pow(floatArg1, floatArg2) * math.log(floatArg1)
+                return [df_dx1, df_dx2]
             except:
-                return 0.0
+                return [0.0, 0.0]
         elif functionName == 'if_float':
             boolArg1 = bool(argumentsList[0])
             floatArg1 = float(argumentsList[1])
             floatArg2 = float(argumentsList[2])
             if boolArg1:
-                return floatArg1
+                return [0.0, 1.0, 0.0]
             else:
-                return floatArg2
+                return [0.0, 0.0, 1.0]
         elif functionName == 'sin':
             try:
                 floatArg1 = float(argumentsList[0])
-                return math.sin(floatArg1)
+                return [math.cos(floatArg1)]
             except:
-                return 0.0
+                return [0.0]
         elif functionName == 'cos':
             try:
                 floatArg1 = float(argumentsList[0])
-                return math.cos(floatArg1)
+                return [-math.sin(floatArg1)]
             except:
-                return 0.0
+                return [0.0]
         elif functionName == 'tan':
             try:
                 floatArg1 = float(argumentsList[0])
-                return math.tan(floatArg1)
+                return [1.0/(math.cos(floatArg1)**2)]
             except:
-                return 0.0
+                return [0.0]
         elif functionName == 'atan':
             floatArg1 = float(argumentsList[0])
-            return math.atan(floatArg1)
+            return [1.0/(1.0 + floatArg1**2)]
         elif functionName == 'sigmoid':
             floatArg1 = float(argumentsList[0])
             try:
-                return 1.0 / (1.0 + math.exp(-floatArg1))
+                return [ math.exp(-floatArg1) / ( (1.0 + math.exp(-floatArg1))**2 ) ]
             except:
-                return 0.0
+                return [0.0]
         elif functionName == 'ispositive_float':
             floatArg1 = float(argumentsList[0])
-            return floatArg1 >= 0.0
+            return [0.0]
         elif functionName == 'inverse_float':
             floatArg1 = float(argumentsList[0])
             try:
                 if floatArg1 == 0:
-                    return 0
+                    return [0.0]
                 else:
-                    return 1.0/floatArg1
+                    return [-1.0 / (floatArg1**2)]
             except:
-                return 0.0
+                return [0.0]
         elif functionName == 'isinbetween_float':
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
             floatArg3 = float(argumentsList[2])
-            if floatArg1 >= floatArg2 and floatArg1 <= floatArg3:
-                return True
-            else:
-                return False
+            return [0.0, 0.0, 0.0]
         elif functionName == 'abs_float':
             floatArg1 = float(argumentsList[0])
-            return abs(floatArg1)
+            if floatArg1 >= 0:
+                return [1.0]
+            else:
+                return [-1.0]
         elif functionName == 'relu_float':
             floatArg1 = float(argumentsList[0])
             if floatArg1 >= 0:
-                return floatArg1
+                return [1.0]
             else:
-                return 0.0
+                return [0.0]
         elif functionName == 'sign_float':
             floatArg1 = float(argumentsList[0])
-            if floatArg1 < 0:
-                return -1.0
-            elif floatArg1 > 0:
-                return 1.0
-            else:
-                return 0.0
+            return [0.0]
         elif functionName == 'max_float':
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            return max(floatArg1, floatArg2)
+            if floatArg1 >= floatArg2:
+                return [1.0, 0.0]
+            else:
+                return [0.0, 1.0]
         elif functionName == 'min_float':
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
-            return min(floatArg1, floatArg2)
+            if floatArg1 <= floatArg2:
+                return [1.0, 0.0]
+            else:
+                return [0.0, 1.0]
         elif functionName == 'gaussian':
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
             try:
                 sigma2 = floatArg2 ** 2
-                f = math.exp(-(floatArg1 ** 2)/(2 * sigma2) )
-                return f
+                df_dx1 = math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1/sigma2
+                df_dx2 = math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1**2/math.pow(floatArg2, 3.0)
+                return [df_dx1, df_dx2]
             except:
-                return 0.0
+                return [0.0, 0.0]
         elif functionName == 'pow2_float':
             floatArg1 = float(argumentsList[0])
-            try:
-                return floatArg1 ** 2
-            except:
-                return 0.0
+            return [2.0 * floatArg1]
         elif functionName == 'sqrt':
             floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 0:
-                return math.sqrt(floatArg1)
-            else:
-                return 0.0
-        """
+            try:
+                return [0.5 * math.pow(floatArg1, -0.5)]
+            except:
+                return [0.0]
+        else:
+            raise NotImplementedError("ArithmeticsInterpreter.FunctionDerivative(): Not implemented function '{}'".format(functionName))
 
 
 
