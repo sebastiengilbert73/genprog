@@ -27,7 +27,7 @@ def main():
     interpreter: gp.ArithmeticsInterpreter = gp.ArithmeticsInterpreter( arithmeticsFunctionsTree)
 
     variableNameToTypeDict: Dict[str, str] = {'x': 'float'}
-    variableNameToValueDict: Dict[str, Union[float, bool]] = {'x': 7.0}
+    variableNameToValueDict: Dict[str, Union[float, bool]] = {'x': 0.3}
     expectedReturnType:str = 'float'
 
     elementToEvaluationDict = interpreter.EvaluateElements(
@@ -54,9 +54,9 @@ def main():
     )
 
     validationCostBeforeLearn: float = 0
-    numberOfTrainingSamples = len(trainingDataset)
+    #numberOfTrainingSamples = len(trainingDataset)
     numberOfValidationSamples = len(validationDataset)
-    learningRate = 0.01
+    learningRate = 0.0001
     for (validationXDict, targetOutput) in validationDataset:
         elementToEvaluationDict = interpreter.EvaluateElements(
             headElm,
