@@ -648,7 +648,10 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
             floatArg2 = float(argumentsList[1])
             if floatArg2 == 0:
                 return [0.0, 0.0]
-            return [1.0/floatArg2, -1.0 * floatArg1/(floatArg2**2)]
+            try:
+                return [1.0/floatArg2, -1.0 * floatArg1/(floatArg2**2)]
+            except:
+                return [0.0, 0.0]
         elif functionName == "greaterThan_float":
             floatArg1 = float(argumentsList[0])
             floatArg2 = float(argumentsList[1])
@@ -720,7 +723,10 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
                 return [0.0]
         elif functionName == 'atan':
             floatArg1 = float(argumentsList[0])
-            return [1.0/(1.0 + floatArg1**2)]
+            try:
+                return [1.0/(1.0 + floatArg1**2)]
+            except:
+                return [0.0]
         elif functionName == 'sigmoid':
             floatArg1 = float(argumentsList[0])
             try:
