@@ -11,6 +11,7 @@ import create_dataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--datasetPrototype', help="The function prototype to generate the dataset. Default: 'sin'", default='sin')
+parser.add_argument('--variableNameToTypeDict', help="The dictionary of variable names to their types. Default: {'x': 'float'}", default="{'x': 'float'}")
 parser.add_argument('--numberOfSamples', help="The number of dataset samples to generate. Default: 1000", type=int, default=1000)
 parser.add_argument('--trainingProportion', help="The proportion of training samples [0, 1]. Default: 0.8", type=float, default=0.8)
 parser.add_argument('--numberOfIndividuals', help="The number of individuals in the population. Default: 300", type=int, default=300)
@@ -23,9 +24,11 @@ parser.add_argument('--mutationProbability', help='The probability to mutate a c
 parser.add_argument('--proportionOfNewIndividuals', help='The proportion of new individuals created at each generation. Default: 0.05', type=float, default=0.05)
 parser.add_argument('--weightForNumberOfElements', help='The multiplicative factor to the number of elements, as a penalty for large trees. Default: 0.0001', type=float, default=0.0001)
 parser.add_argument('--learningRate', help='The learning rate for backpropagation. Default: 0.001', type=float, default=0.001)
+parser.add_argument('--numberOfEpochsPerGeneration', help='At each generation, the number of training epochs for constant optimization. default: 10', type=int, default=10)
 args = parser.parse_args()
 levelToFunctionProbabilityDict = ast.literal_eval(args.levelToFunctionProbabilityDict)
 constantCreationParametersList = ast.literal_eval(args.constantCreationParametersList)
+variableNameToTypeDict: Dict[str, str] = ast.literal_eval(args.variableNameToTypeDict)
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s %(levelname)s %(message)s')
 
@@ -66,15 +69,19 @@ def evaluate_individuals(population: gpevo.ArithmeticsPopulation,
 def main() -> None:
     logging.info("test_evolution_backprop.py main()")
 
-    variableNameToTypeDict: Dict[str, str] = {'x': 'float'}
     tree_filepath: str = '../../src/genprog/domains/arithmetics.xml'
     returnType: str = 'float'
 
     # Generate the dataset
     logging.info("Generating the dataset '{}'...".format(args.datasetPrototype))
-    xDictOutputValueTupleList: List[Tuple[Dict[str, float], float]] = create_dataset.CreateDataset(
-        args.datasetPrototype, args.numberOfSamples
-    )
+    if args.datasetPrototype.lower().endswith('2d'):
+        xDictOutputValueTupleList: List[Tuple[Dict[str, float], float]] = create_dataset.CreateDataset_2D(
+            args.datasetPrototype, args.numberOfSamples
+        )
+    else:
+        xDictOutputValueTupleList = create_dataset.CreateDataset(
+            args.datasetPrototype, args.numberOfSamples
+        )
     # Split dataset
     (trainingDataset, validationDataset) = create_dataset.SplitDataset(
         xDictOutputValueTupleList, trainingProportion=args.trainingProportion
@@ -109,19 +116,17 @@ def main() -> None:
 
     # Optimize constants with backpropagation
     logging.info("Optimizing constants with backpropagation...")
-    numberOfTrainedIndividuals: int = 0
-    for individualNdx in range(len(population._individualsList)):
-        trainedIndividual = interpreter.EpochOfTraining(
-            population._individualsList[individualNdx],
-            variableNameToTypeDict,
-            returnType,
-            trainingDataset,
-            args.learningRate
-        )
-        population._individualsList[individualNdx] = trainedIndividual
-        numberOfTrainedIndividuals += 1
-        if numberOfTrainedIndividuals % 30 == 0:
-            logging.info("Trained {} / {}".format(numberOfTrainedIndividuals, len(population._individualsList)))
+    for epoch in range(args.numberOfEpochsPerGeneration):
+        logging.debug("Epoch {}".format(epoch + 1))
+        for individualNdx in range(len(population._individualsList)):
+            population._individualsList[individualNdx] = interpreter.EpochOfTraining(
+                population._individualsList[individualNdx],
+                variableNameToTypeDict,
+                returnType,
+                trainingDataset,
+                args.learningRate
+            )
+
 
     (validationChampion, championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost, training_individualToCostDict) = \
         evaluate_individuals(
@@ -161,15 +166,15 @@ def main() -> None:
         )
 
         # Optimize constants with backpropagation
-        for individualNdx in range(len(population._individualsList)):
-            trainedIndividual = interpreter.EpochOfTraining(
-                population._individualsList[individualNdx],
-                variableNameToTypeDict,
-                returnType,
-                trainingDataset,
-                args.learningRate
-            )
-            population._individualsList[individualNdx] = trainedIndividual
+        for epoch in range(args.numberOfEpochsPerGeneration):
+            for individualNdx in range(len(population._individualsList)):
+                population._individualsList[individualNdx] = interpreter.EpochOfTraining(
+                    population._individualsList[individualNdx],
+                    variableNameToTypeDict,
+                    returnType,
+                    trainingDataset,
+                    args.learningRate
+                )
 
         # Population evaluation
         (validationChampion, championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost,
