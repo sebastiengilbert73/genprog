@@ -3,9 +3,10 @@ import random
 import math
 import logging
 from genprog import core as gp, evolution as gpevo
+import numpy
 
 
-def CreateDataset(prototype: str, numberOfSamples: int) -> List[Tuple[Dict[str, float], float]]:
+def CreateDataset(prototype: str, numberOfSamples: int, noiseStdDev: float=0.05) -> List[Tuple[Dict[str, float], float]]:
     xDictOutputValueTupleList: List[Tuple[Dict[str, float], float]] = []
 
     for sampleNdx in range(numberOfSamples):
@@ -13,16 +14,16 @@ def CreateDataset(prototype: str, numberOfSamples: int) -> List[Tuple[Dict[str, 
         xToValuesDict: Dict[str, float] = {'x': x}
         outputValue: float = 0
         if prototype == 'sin':
-            outputValue = math.sin(2 * math.pi * (x))
+            outputValue = math.sin(2 * math.pi * (x)) + noiseStdDev * numpy.random.normal()
         elif prototype == 'parabola':
-            outputValue = 6 * x**2 - 5 * x + 0.4
+            outputValue = 6 * x**2 - 5 * x + 0.4 + noiseStdDev * numpy.random.normal()
         else:
             raise NotImplementedError("CreateDataset(): Not implemented prototype '{}'".format(prototype))
         xDictOutputValueTupleList.append((xToValuesDict, outputValue))
 
     return xDictOutputValueTupleList
 
-def CreateDataset_2D(prototype: str, numberOfSamples: int) -> List[Tuple[Dict[str, float], float]]:
+def CreateDataset_2D(prototype: str, numberOfSamples: int, noiseStdDev: float=0.05) -> List[Tuple[Dict[str, float], float]]:
     xDictOutputValueTupleList: List[Tuple[Dict[str, float], float]] = []
 
     for sampleNdx in range(numberOfSamples):
@@ -31,9 +32,9 @@ def CreateDataset_2D(prototype: str, numberOfSamples: int) -> List[Tuple[Dict[st
         xToValuesDict: Dict[str, float] = {'x': x, 'y': y}
         outputValue: float = 0
         if prototype == 'sin2d':
-            outputValue = math.sin(2 * math.pi * x + 0.7 * math.pi * y - 0.4)
+            outputValue = math.sin(2 * math.pi * x + 0.7 * math.pi * y - 0.4) + noiseStdDev * numpy.random.normal()
         elif prototype == 'parabola2d':
-            outputValue = 6 * x**2 - 5 * x + 0.4 - 2.5 * y**2 + 1.7 * y + 2.1 * x * y
+            outputValue = 6 * x**2 - 5 * x + 0.4 - 2.5 * y**2 + 1.7 * y + 2.1 * x * y + noiseStdDev * numpy.random.normal()
         else:
             raise NotImplementedError("CreateDataset(): Not implemented prototype '{}'".format(prototype))
         xDictOutputValueTupleList.append((xToValuesDict, outputValue))
