@@ -156,13 +156,14 @@ class Population(abc.ABC):
             chosenParticipant = random.choice(self._individualsList)
             participantsList.append(chosenParticipant)
         lowestCost: float = sys.float_info.max
-        champion: Optional[genprog.core.Individual]
+        champion: Optional[genprog.core.Individual] = None
         for participant in participantsList:
             if individualToCostDict[participant] < lowestCost:
                 lowestCost = individualToCostDict[participant]
                 champion = participant
         if champion is None:
-            raise ValueError("Population.Tournament(): champion is None... (?)")
+            logging.warning("Population.Tournament(): champion is None. Returning participantsList[0]")
+            return participantsList[0]
         return champion
 
     def NewGenerationWithTournament(self,
