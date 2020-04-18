@@ -417,10 +417,10 @@ class Interpreter(abc.ABC):
                 expectedReturnType
             )
             delta = elementToEvaluationDict[headElm] - targetOutput
-            try:
+            """try:
                 delta2: float = delta**2
             except:
-                delta2 = delta
+                delta2 = delta"""
 
             elementToGradientDict = self.Backpropagate(
                 headElm,
@@ -431,7 +431,7 @@ class Interpreter(abc.ABC):
                 if element.tag == 'constant':
                     initialValue = elementToEvaluationDict[element]
                     try:
-                        newValue = initialValue - numpy.sign(delta) * delta2 * learningRate * gradient
+                        newValue = initialValue - delta * learningRate * gradient
                         element.text = str(newValue)
                     except: # The value type is not appropriate for updating. Ex.: bool
                         pass
