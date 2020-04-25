@@ -255,6 +255,27 @@ class Population(abc.ABC):
             raise ValueError("Population.Champion(): champion is None... (?)")
         return (champion, lowestCost)
 
+    def AverageEvaluation(self, inputsList: List[ Dict[str, Any] ],
+                          interpreter: genprog.core.Interpreter,
+                          variableNameToTypeDict: Dict[str, str],
+                          expectedReturnType: str) -> List[ Tuple[ Dict[str, Any], Any] ]:
+        inputToOutputList: List[ Tuple[ Dict[str, Any], Any] ] = []
+
+        for inputDict in inputsList:
+            outputSum = interpreter.Evaluate( self._individualsList[0],
+                                              variableNameToTypeDict,
+                                              inputDict,
+                                              expectedReturnType)
+            for indivudualNdx in range(1, len(self._individualsList)):
+                outputSum = outputSum + interpreter.Evaluate( self._individualsList[indivudualNdx],
+                                              variableNameToTypeDict,
+                                              inputDict,
+                                              expectedReturnType)
+            averageOutput = 1.0/len(self._individualsList) * outputSum
+            inputToOutputList.append((inputDict, averageOutput))
+        return inputToOutputList
+
+
 
 class ArithmeticsPopulation(Population): # An example to follow for other domains
     def EvaluateIndividualCosts(self,
@@ -314,7 +335,6 @@ class ArithmeticsPopulation(Population): # An example to follow for other domain
                 individualToCostDict[individual] = individualToCostDict[individual] + weightForNumberOfElements * numberOfElements
 
         return individualToCostDict
-
 
 
 # Utilities
