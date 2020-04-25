@@ -224,6 +224,21 @@ class Interpreter(abc.ABC):
                                                            elementToGradientDict)
         return elementToGradientDict
 
+    def VariableNameToGradientDict(self, headElement: ET.Element,
+                                   elementToGradientDict: Dict[ET.Element, Any],
+                                   variableNameToTypeDict: Dict[str, str]) -> Dict[str, Any]:
+        variableNameToGradientDict: Dict[str, Any] = {}
+        for element in elementToGradientDict.keys():
+            if element.tag == 'variable':
+                variableName: Optional[str] = element.text
+                if variableName is None:
+                    raise ValueError("Interpreter.VariableNameToGradientDict(): A variable has no name")
+                if variableName in variableNameToGradientDict:
+                    variableNameToGradientDict[variableName] = variableNameToGradientDict[variableName] + elementToGradientDict[element]
+                else:
+                    variableNameToGradientDict[variableName] = elementToGradientDict[element]
+        return variableNameToGradientDict
+
     @abc.abstractmethod
     def FunctionDefinition(self, functionName: str, argumentsList: List[Any]) -> Any:
         pass
