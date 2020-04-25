@@ -15,16 +15,17 @@ parser.add_argument('--variableNameToTypeDict', help="The dictionary of variable
 parser.add_argument('--numberOfSamples', help="The number of dataset samples to generate. Default: 1000", type=int, default=1000)
 parser.add_argument('--noiseStdDev', help='The standard deviation of the white gaussian noise. Default: 0.05', type=float, default=0.05)
 parser.add_argument('--trainingProportion', help="The proportion of training samples [0, 1]. Default: 0.8", type=float, default=0.8)
+parser.add_argument('--originalPopulationFilepathPrefix', help="The filepath prefix for the original population. If 'None', the original population is randomly generated. Default: 'None'", default='None')
 parser.add_argument('--numberOfIndividuals', help="The number of individuals in the population. Default: 300", type=int, default=300)
 parser.add_argument('--levelToFunctionProbabilityDict', help="The level to function probability dict. Default: '{0: 1, 1: 0.9, 2: 0.9, 3: 0.5}'", default='{0: 1.0, 1: 0.9, 2: 0.9, 3: 0.5}')
 parser.add_argument('--proportionOfConstants', help='When choosing between a variable and a constant, probability to choose a constant. Default: 0.6', type=float, default=0.6)
 parser.add_argument('--constantCreationParametersList', help="The list of parameters that the interpreter will use to create a constant (CreateConstant()). In case of ArithmeticsInterpreter, it is [minValue, maxValue]. Default: '[-10, 10]'", default='[-10, 10]')
-parser.add_argument('--numberOfTournamentParticipants', help="The number of participants in a tournament. Default: 3", type=int, default=3)
+parser.add_argument('--numberOfTournamentParticipants', help="The number of participants in a tournament. Default: 2", type=int, default=2)
 parser.add_argument('--numberOfGenerations', help="The number of generations. Default: 100", type=int, default=100)
 parser.add_argument('--mutationProbability', help='The probability to mutate a child. Default: 0.25', type=float, default=0.25)
 parser.add_argument('--proportionOfNewIndividuals', help='The proportion of new individuals created at each generation. Default: 0.15', type=float, default=0.15)
 parser.add_argument('--weightForNumberOfElements', help='The multiplicative factor to the number of elements, as a penalty for large trees. Default: 0.0001', type=float, default=0.0001)
-parser.add_argument('--learningRate', help='The learning rate for backpropagation. Default: 0.1', type=float, default=0.1)
+parser.add_argument('--learningRate', help='The learning rate for backpropagation. Default: 0.01', type=float, default=0.01)
 parser.add_argument('--numberOfEpochsPerGeneration', help='At each generation, the number of training epochs for constant optimization. default: 3', type=int, default=3)
 args = parser.parse_args()
 levelToFunctionProbabilityDict = ast.literal_eval(args.levelToFunctionProbabilityDict)
@@ -94,16 +95,20 @@ def main() -> None:
 
     # Generate the population
     logging.info("Generating the population...")
-    population: gpevo.ArithmeticsPopulation = gpevo.ArithmeticsPopulation()
-    population.Generate(
-        args.numberOfIndividuals,
-        interpreter,
-        returnType,
-        levelToFunctionProbabilityDict,
-        args.proportionOfConstants,
-        constantCreationParametersList,
-        variableNameToTypeDict
-    )
+    if args.originalPopulationFilepathPrefix is 'None':
+        population: gpevo.ArithmeticsPopulation = gpevo.ArithmeticsPopulation()
+        population.Generate(
+            args.numberOfIndividuals,
+            interpreter,
+            returnType,
+            levelToFunctionProbabilityDict,
+            args.proportionOfConstants,
+            constantCreationParametersList,
+            variableNameToTypeDict
+        )
+    else:
+        population = gpevo.ArithmeticsPopulation()
+        population.LoadIndividuals(args.originalPopulationFilepathPrefix)
 
     (validationChampion, championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost, training_individualToCostDict) = \
         evaluate_individuals(
