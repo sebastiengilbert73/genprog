@@ -34,7 +34,7 @@ def CreateDataset_2D(prototype: str, numberOfSamples: int, noiseStdDev: float=0.
         if prototype == 'sin2d':
             outputValue = math.sin(2 * math.pi * x + 0.7 * math.pi * y - 0.4) + noiseStdDev * numpy.random.normal()
         elif prototype == 'parabola2d':
-            outputValue = 6 * x**2 - 5 * x + 0.4 - 2.5 * y**2 + 1.7 * y + 2.1 * x * y + noiseStdDev * numpy.random.normal()
+            outputValue = 6 * x**2 - 5 * x + 0.4 - 9.5 * y**2 + 1.7 * y + 2.1 * x * y + noiseStdDev * numpy.random.normal()
         else:
             raise NotImplementedError("CreateDataset(): Not implemented prototype '{}'".format(prototype))
         xDictOutputValueTupleList.append((xToValuesDict, outputValue))
