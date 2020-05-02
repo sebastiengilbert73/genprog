@@ -17,6 +17,14 @@ def CreateDataset(prototype: str, numberOfSamples: int, noiseStdDev: float=0.05)
             outputValue = math.sin(2 * math.pi * (x)) + noiseStdDev * numpy.random.normal()
         elif prototype == 'parabola':
             outputValue = 6 * x**2 - 5 * x + 0.4 + noiseStdDev * numpy.random.normal()
+        elif prototype == 'steps':
+            if x < 0.2:
+                outputValue = -0.3
+            elif x < 0.7:
+                outputValue = 0.7
+            else:
+                outputValue = 0.4
+            outputValue += noiseStdDev * numpy.random.normal()
         else:
             raise NotImplementedError("CreateDataset(): Not implemented prototype '{}'".format(prototype))
         xDictOutputValueTupleList.append((xToValuesDict, outputValue))
@@ -90,3 +98,67 @@ def EvaluateIndividuals(population: gpevo.ArithmeticsPopulation,
         "championTrainingCost = {};    championValidationCost = {};    medianTrainingCost = {};    medianValidationCost = {}".format(
             championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost))
     return (validationChampion, championTrainingCost, championValidationCost, medianTrainingCost, medianValidationCost, training_individualToCostDict)
+
+def SaveDataset(dataset: List[Tuple[Dict[str, Union[float, bool]], Union[float, bool]]],
+                filepath: str) -> None:
+    if len(dataset) < 1:
+        raise ValueError("create_dataset.SaveDataset(): Empty dataset")
+    input0 = dataset[0][0]
+    inputVariableNames = list(input0.keys())
+    with open(filepath, 'w') as outputFile:
+        for variableName in inputVariableNames:
+            outputFile.write("{},".format(variableName))
+        outputFile.write('target\n')
+        for sample in dataset:
+            inputDict = sample[0]
+            for variableName in inputVariableNames:
+                if variableName not in inputDict:
+                    raise ValueError("create_dataset.SaveDataset(): For a sample, there is no variable '{}'".format(variableName))
+                variableValue = inputDict[variableName]
+                outputFile.write("{},".format(variableValue))
+            outputFile.write("{}\n".format(sample[1]))
+
+def LoadDataset(filepath: str,
+                variableNameToTypeDict: Dict[str, str],
+                returnType: str) -> List[Tuple[Dict[str, Union[float, bool]], Union[float, bool]]]:
+    dataset = []
+    with open(filepath, 'r') as inputFile:
+        # Read the header
+        line = inputFile.readline()
+        tokens = line.split(',')
+        if tokens[-1] != 'target\n':
+            raise ValueError("The last header token ({}) is not 'target'".format(tokens[-1]))
+        variableNames = tokens[:-1]
+        while(line):
+            line = inputFile.readline()
+            if line:
+                tokens = line.split(',')
+                inputDict = dict(zip(variableNames, tokens[: -1]))
+                inputDict = ConvertVariableTypes(inputDict, variableNameToTypeDict)
+                targetValue = tokens[-1]
+                targetValue = ConvertType(returnType, targetValue)
+                dataset.append((inputDict, targetValue))
+    return dataset
+
+def ConvertVariableTypes(inputDict: Dict[str, str],
+                         variableNameToTypeDict: Dict[str, str]) -> Dict[str, Union[float, bool]]:
+    convertedDict = {}
+    for variableName, value in inputDict.items():
+        variableType = variableNameToTypeDict[variableName]
+        convertedValue = ConvertType(variableType, value)
+        convertedDict[variableName] = convertedValue
+    return convertedDict
+
+def ConvertType(expectedType: str, value: str) -> Union[float, bool]:
+    if expectedType == 'float':
+        convertedValue = float(value)
+    elif expectedType == 'bool':
+        if value.lower() == 'true':
+            convertedValue = True
+        elif value.lower() == 'false':
+            convertedValue = False
+        else:
+            raise ValueError("ConvertType(): Unknown value '{}'. A boolean is expected.".format(value))
+    else:
+        raise NotImplementedError("ConvertType(): Unsupported variable type '{}'".format(variableType))
+    return convertedValue
