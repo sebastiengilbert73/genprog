@@ -635,6 +635,16 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
                 return f
             except:
                 return 0.0
+        elif functionName == 'gaussian_scaled':
+            x = float(argumentsList[0])
+            mu = float(argumentsList[1])
+            sigma = float(argumentsList[2])
+            a = float(argumentsList[3])
+            try:
+                sigma2 = sigma**2
+                return a * math.exp( -((x - mu)**2)/(2 * sigma2) )
+            except:
+                return 0.0
         elif functionName == 'pow2_float':
             floatArg1 = float(argumentsList[0])
             try:
@@ -647,6 +657,43 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
                 return math.sqrt(floatArg1)
             else:
                 return 0.0
+        elif functionName == 'windowed_linear':
+            x = float(argumentsList[0]) # x
+            alpha = float(argumentsList[1]) # alpha
+            c = float(argumentsList[2]) # c
+            L = float(argumentsList[3]) # L
+            if x >= c - abs(L/2) and x <= c + abs(L/2):
+                return alpha * (x - c)
+            else:
+                return 0
+        elif functionName == 'window':
+            x = float(argumentsList[0])
+            alpha = float(argumentsList[1])
+            c = float(argumentsList[2])
+            L = float(argumentsList[3])
+            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
+                return alpha
+            else:
+                return 0
+        elif functionName == 'ramp_increasing':
+            x = float(argumentsList[0])
+            alpha = float(argumentsList[1])
+            c = float(argumentsList[2])
+            L = float(argumentsList[3])
+            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
+                return alpha * (x - c + abs(L/2))
+            else:
+                return 0
+        elif functionName == 'ramp_decreasing':
+            x = float(argumentsList[0])
+            alpha = float(argumentsList[1])
+            c = float(argumentsList[2])
+            L = float(argumentsList[3])
+            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
+                return -alpha * (x - c - abs(L/2))
+            else:
+                return 0
+
         else:
             raise NotImplementedError("ArithmeticsInterpreter.FunctionDefinition(): Not implemented function '{}'".format(functionName))
 
@@ -804,11 +851,25 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
             floatArg2 = float(argumentsList[1])
             try:
                 sigma2 = floatArg2 ** 2
-                df_dx1 = math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1/sigma2
+                df_dx1 = -math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1/sigma2
                 df_dx2 = math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1**2/math.pow(floatArg2, 3.0)
                 return [df_dx1, df_dx2]
             except:
                 return [0.0, 0.0]
+        elif functionName == 'gaussian_scaled':
+            x = float(argumentsList[0])
+            mu = float(argumentsList[1])
+            sigma = float(argumentsList[2])
+            a = float(argumentsList[3])
+            try:
+                sigma2 = sigma**2
+                df_dx = -a * (x - mu)/sigma2 * math.exp( (-(x - mu)**2)/(2 * sigma2) )
+                df_dmu = a * (x - mu)/sigma2 * math.exp( (-(x - mu)**2)/(2 * sigma2) )
+                df_dsigma = a * ((x - mu)**2)/(math.pow(sigma, 3)) * math.exp( (-(x - mu)**2)/(2 * sigma2) )
+                df_da = math.exp( (-(x - mu)**2)/(2 * sigma2) )
+                return [df_dx, df_dmu, df_dsigma, df_da]
+            except:
+                return [0.0, 0.0, 0.0, 0.0]
         elif functionName == 'pow2_float':
             floatArg1 = float(argumentsList[0])
             return [2.0 * floatArg1]
@@ -818,9 +879,44 @@ class ArithmeticsInterpreter(Interpreter): # An example to follow for other doma
                 return [0.5 * math.pow(floatArg1, -0.5)]
             except:
                 return [0.0]
+        elif functionName == 'windowed_linear':
+            x = float(argumentsList[0]) # x
+            alpha = float(argumentsList[1]) # alpha
+            c = float(argumentsList[2]) # c
+            L = float(argumentsList[3]) # L
+            if x >= c - abs(L/2) and x <= c + abs(L/2):
+                return [alpha, x - c, -alpha, 0.0]
+            else:
+                return [0, 0, 0, 0]
+        elif functionName == 'window':
+            x = float(argumentsList[0])
+            alpha = float(argumentsList[1])
+            c = float(argumentsList[2])
+            L = float(argumentsList[3])
+            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
+                return [0, 1, 0, 0]
+            else:
+                return [0, 0, 0, 0]
+        elif functionName == 'ramp_increasing':
+            x = float(argumentsList[0])
+            alpha = float(argumentsList[1])
+            c = float(argumentsList[2])
+            L = float(argumentsList[3])
+            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
+                return [alpha, x - c + abs(L)/2, -alpha, alpha/2 * numpy.sign(L)]
+            else:
+                return [0, 0, 0, 0]
+        elif functionName == 'ramp_decreasing':
+            x = float(argumentsList[0])
+            alpha = float(argumentsList[1])
+            c = float(argumentsList[2])
+            L = float(argumentsList[3])
+            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
+                return [-alpha, -(x - c - abs(L)/2), alpha, alpha/2 * numpy.sign(L)]
+            else:
+                return [0, 0, 0, 0]
         else:
             raise NotImplementedError("ArithmeticsInterpreter.FunctionDerivative(): Not implemented function '{}'".format(functionName))
-
 
 
     def CreateConstant(self, returnType: str, parametersList: Optional[List[Union[float, bool] ]]) -> str:
