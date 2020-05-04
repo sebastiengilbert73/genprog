@@ -141,6 +141,11 @@
 		<return_type>float</return_type>
 	</function>
 	<function>
+		<name>gaussian_scaled</name>
+		<parameter_types>[float, float, float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
 		<name>pow2_float</name>
 		<parameter_types>[float]</parameter_types>
 		<return_type>float</return_type>
@@ -148,6 +153,26 @@
 	<function>
 		<name>sqrt</name>
 		<parameter_types>[float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>windowed_linear</name>
+		<parameter_types>[float, float, float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>window</name>
+		<parameter_types>[float, float, float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>ramp_increasing</name>
+		<parameter_types>[float, float, float, float]</parameter_types>
+		<return_type>float</return_type>
+	</function>
+	<function>
+		<name>ramp_decreasing</name>
+		<parameter_types>[float, float, float, float]</parameter_types>
 		<return_type>float</return_type>
 	</function>
 </arithmetics>
