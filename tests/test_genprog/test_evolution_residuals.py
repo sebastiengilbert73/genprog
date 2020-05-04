@@ -8,10 +8,12 @@ import xml.etree.ElementTree as ET
 import ast
 import sys
 import create_dataset
+import copy
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--datasetPrototype', help="The function prototype to generate the dataset. Default: 'sin'", default='sin')
 parser.add_argument('--variableNameToTypeDict', help="The dictionary of variable names to their types. Default: {'x': 'float'}", default="{'x': 'float'}")
+parser.add_argument('--datasetFilepath', help="The filepath to the dataset. If 'None', the dataset will be generated. Default: 'None'", default='None')
 parser.add_argument('--numberOfSamples', help="The number of dataset samples to generate. Default: 1000", type=int, default=1000)
 parser.add_argument('--noiseStdDev', help='The standard deviation of the white gaussian noise. Default: 0.05', type=float, default=0.05)
 parser.add_argument('--trainingProportion', help="The proportion of training samples [0, 1]. Default: 0.8", type=float, default=0.8)
@@ -28,6 +30,7 @@ parser.add_argument('--weightForNumberOfElements', help='The multiplicative fact
 parser.add_argument('--learningRate', help='The learning rate for backpropagation. Default: 0.01', type=float, default=0.01)
 parser.add_argument('--numberOfEpochsPerGeneration', help='At each generation, the number of training epochs for constant optimization. default: 4', type=int, default=4)
 parser.add_argument('--numberOfGenerationsPerResidual', help='The period after which a new population is created to fit the residual. Default: 20', type=int, default=20)
+parser.add_argument('--domainPrimitivesFilepath', help="The filepath to the xml file defining the list of primitives. Default:'../../src/genprog/domains/arithmetics.xml'", default='../../src/genprog/domains/arithmetics.xml')
 args = parser.parse_args()
 levelToFunctionProbabilityDict = ast.literal_eval(args.levelToFunctionProbabilityDict)
 constantCreationParametersList = ast.literal_eval(args.constantCreationParametersList)
@@ -87,26 +90,31 @@ def compute_residual(dataset: List[Tuple[Dict[str, float], float]],
 def main() -> None:
     logging.info("test_evolution_residuals.py main()")
 
-    tree_filepath: str = '../../src/genprog/domains/arithmetics.xml'
     returnType: str = 'float'
 
     # Generate the dataset
     logging.info("Generating the dataset '{}'...".format(args.datasetPrototype))
-    if args.datasetPrototype.lower().endswith('2d'):
-        xDictOutputValueTupleList: List[Tuple[Dict[str, float], float]] = create_dataset.CreateDataset_2D(
-            args.datasetPrototype, args.numberOfSamples, args.noiseStdDev
-        )
+    if args.datasetFilepath is not 'None':
+        xDictOutputValueTupleList = create_dataset.LoadDataset(args.datasetFilepath,
+                                                               variableNameToTypeDict,
+                                                               returnType)
     else:
-        xDictOutputValueTupleList = create_dataset.CreateDataset(
-            args.datasetPrototype, args.numberOfSamples, args.noiseStdDev
-        )
+        if args.datasetPrototype.lower().endswith('2d'):
+            xDictOutputValueTupleList: List[Tuple[Dict[str, float], float]] = create_dataset.CreateDataset_2D(
+                args.datasetPrototype, args.numberOfSamples, args.noiseStdDev
+            )
+        else:
+            xDictOutputValueTupleList = create_dataset.CreateDataset(
+                args.datasetPrototype, args.numberOfSamples, args.noiseStdDev
+            )
+        create_dataset.SaveDataset(xDictOutputValueTupleList, './outputs/test_evolution_residuals_generated_{}.csv'.format(args.datasetPrototype))
     # Split dataset
     (trainingDataset, validationDataset) = create_dataset.SplitDataset(
         xDictOutputValueTupleList, trainingProportion=args.trainingProportion
     )
 
     # Create the interpreter
-    domainFunctionsTree: ET.ElementTree = ET.parse(tree_filepath)
+    domainFunctionsTree: ET.ElementTree = ET.parse(args.domainPrimitivesFilepath)
     interpreter: gp.ArithmeticsInterpreter = gp.ArithmeticsInterpreter(domainFunctionsTree)
 
     # Generate the population
@@ -175,7 +183,7 @@ def main() -> None:
 
         if generationNdx % args.numberOfGenerationsPerResidual == 0:
             logging.info("Generating a new population")
-            residualChampion = validationChampion
+            #residualChampion = validationChampion
             residualChampion.Save('./outputs/residualChampion_{}.xml'.format(generationNdx))
             trainingDataset = compute_residual(trainingDataset, residualChampion, variableNameToTypeDict, returnType, interpreter)
             validationDataset = compute_residual(validationDataset, residualChampion, variableNameToTypeDict, returnType, interpreter)
@@ -191,6 +199,7 @@ def main() -> None:
                 variableNameToTypeDict
             )
             lowestChampionValidationCost = sys.float_info.max
+            residualChampion = None
 
         else:
             training_individualToCostDict = population.NewGenerationWithTournament(
@@ -240,6 +249,7 @@ def main() -> None:
         if championValidationCost < lowestChampionValidationCost:
             validationChampion.Save('./outputs/champion_' + str(generationNdx) + '.xml')
             lowestChampionValidationCost = championValidationCost
+            residualChampion = copy.deepcopy(validationChampion)
 
         # Comparison file
         comparisonFile = open('./outputs/comparison.csv', 'w', buffering=1)
