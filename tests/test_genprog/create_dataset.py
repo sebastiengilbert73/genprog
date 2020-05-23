@@ -126,8 +126,8 @@ def LoadDataset(filepath: str,
         # Read the header
         line = inputFile.readline()
         tokens = line.split(',')
-        if tokens[-1] != 'target\n':
-            raise ValueError("The last header token ({}) is not 'target'".format(tokens[-1]))
+        #if tokens[-1] != 'target\n':
+        #    raise ValueError("The last header token ({}) is not 'target'".format(tokens[-1]))
         variableNames = tokens[:-1]
         while(line):
             line = inputFile.readline()
