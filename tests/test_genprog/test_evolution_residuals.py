@@ -31,6 +31,7 @@ parser.add_argument('--learningRate', help='The learning rate for backpropagatio
 parser.add_argument('--numberOfEpochsPerGeneration', help='At each generation, the number of training epochs for constant optimization. default: 4', type=int, default=4)
 parser.add_argument('--numberOfGenerationsPerResidual', help='The period after which a new population is created to fit the residual. Default: 20', type=int, default=20)
 parser.add_argument('--domainPrimitivesFilepath', help="The filepath to the xml file defining the list of primitives. Default:'../../src/genprog/domains/arithmetics.xml'", default='../../src/genprog/domains/arithmetics.xml')
+parser.add_argument('--writeToComparisonFile', help='Write to comparison file. One of the variables must be x', action='store_true')
 args = parser.parse_args()
 levelToFunctionProbabilityDict = ast.literal_eval(args.levelToFunctionProbabilityDict)
 constantCreationParametersList = ast.literal_eval(args.constantCreationParametersList)
@@ -119,7 +120,7 @@ def main() -> None:
 
     # Generate the population
     logging.info("Generating the population...")
-    if args.originalPopulationFilepathPrefix is 'None':
+    if args.originalPopulationFilepathPrefix == 'None':
         population: gpevo.ArithmeticsPopulation = gpevo.ArithmeticsPopulation()
         population.Generate(
             args.numberOfIndividuals,
@@ -252,13 +253,14 @@ def main() -> None:
             residualChampion = copy.deepcopy(validationChampion)
 
         # Comparison file
-        comparisonFile = open('./outputs/comparison.csv', 'w', buffering=1)
-        comparisonFile.write('x,target,prediction\n')
-        for xTarget in validationDataset:
-            x = xTarget[0]['x']
-            target = xTarget[1]
-            prediction = interpreter.Evaluate( validationChampion, variableNameToTypeDict, xTarget[0], returnType)
-            comparisonFile.write(str(x) + ',' + str(target) + ',' + str(prediction) + '\n')
+        if args.writeToComparisonFile:
+            comparisonFile = open('./outputs/comparison.csv', 'w', buffering=1)
+            comparisonFile.write('x,target,prediction\n')
+            for xTarget in validationDataset:
+                x = xTarget[0]['x']
+                target = xTarget[1]
+                prediction = interpreter.Evaluate( validationChampion, variableNameToTypeDict, xTarget[0], returnType)
+                comparisonFile.write(str(x) + ',' + str(target) + ',' + str(prediction) + '\n')
 
 
 if __name__ == '__main__':
