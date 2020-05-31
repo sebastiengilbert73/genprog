@@ -294,7 +294,7 @@ class Population(abc.ABC):
             inputToOutputList.append((inputDict, outputSum))
         return inputToOutputList
 
-
+"""
 class ArithmeticsPopulation(Population): # An example to follow for other domains
     def EvaluateIndividualCosts(self,
                                 inputOutputTuplesList: List[Tuple[Dict[str, Union[float, bool] ], Union[float, bool]]],
@@ -353,7 +353,7 @@ class ArithmeticsPopulation(Population): # An example to follow for other domain
                 individualToCostDict[individual] = individualToCostDict[individual] + weightForNumberOfElements * numberOfElements
 
         return individualToCostDict
-
+"""
 
 # Utilities
 def NumberOfElements(tree: ET.ElementTree) -> int:

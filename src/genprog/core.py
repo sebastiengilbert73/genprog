@@ -3,10 +3,8 @@ import abc
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Any, Set, Tuple, Optional, Union
 import ast
-import math
 import random
 import xml.dom.minidom
-import numpy
 
 
 class Individual():
@@ -17,11 +15,6 @@ class Individual():
     def __init__(self, tree: ET.ElementTree):
         super().__init__()
         self._tree = tree
-
-    """@abc.abstractmethod
-    def Cost(self, inputData: Any, targetOutputData: Any) -> float:
-        pass
-    """
 
     def Save(self, filepath: str):
         rootElm: ET.Element = self._tree.getroot()
@@ -82,45 +75,45 @@ class Interpreter(abc.ABC):
             if rootChild.tag == 'function':
                 functionNameElm: Optional[ET.Element] = rootChild.find('name')
                 if functionNameElm is None:
-                    raise ValueError("genetic_programming.py Interpreter.__init__(): A function doesn't have a <name> element")
+                    raise ValueError("core.py Interpreter.__init__(): A function doesn't have a <name> element")
                 functionName: Optional[str] = functionNameElm.text
                 if functionName is None:
                     raise ValueError(
-                        "genetic_programming.py Interpreter.__init__(): A function have an empty <name> element")
+                        "core.py Interpreter.__init__(): A function have an empty <name> element")
                 if functionName in functionNamesSet:
-                    raise ValueError("genetic_programming.py Interpreter.__init__(): The function name '{}' is encountered more than once in the domain functions tree".format(functionName))
+                    raise ValueError("core.py Interpreter.__init__(): The function name '{}' is encountered more than once in the domain functions tree".format(functionName))
                 functionNamesSet.add(functionName)
 
                 parameterTypesElm: Optional[ET.Element] = rootChild.find('parameter_types')
                 if parameterTypesElm is None:
                     raise ValueError(
-                        "genetic_programming.py Interpreter.__init__(): The function {} doesn't have a <parameter_types> element".format(functionName))
+                        "core.py Interpreter.__init__(): The function {} doesn't have a <parameter_types> element".format(functionName))
                 parameterTypesListStr: Optional[str] = parameterTypesElm.text
                 if parameterTypesListStr is None:
-                    raise ValueError("genetic_programming.py Interpreter.__init__(): The function {} have an empty <parameter_types> element.".format(
+                    raise ValueError("core.py Interpreter.__init__(): The function {} have an empty <parameter_types> element.".format(
                         functionName))
                 parameterTypesListStr = parameterTypesListStr.replace(' ', '')
                 parameterTypesListStr = parameterTypesListStr.replace('[', "['")
                 parameterTypesListStr = parameterTypesListStr.replace(']', "']")
                 parameterTypesListStr = parameterTypesListStr.replace(',', "','")
-                #print ("genetic_programming.py Interpreter.__init__(): parameterTypesListStr = {}".format(parameterTypesListStr))
+                #print ("core.py Interpreter.__init__(): parameterTypesListStr = {}".format(parameterTypesListStr))
                 parameterTypesList = ast.literal_eval(parameterTypesListStr)
-                #print ("genetic_programming.py Interpreter.__init__(): parameterTypesList = {}".format(parameterTypesList))
+                #print ("core.py Interpreter.__init__(): parameterTypesList = {}".format(parameterTypesList))
 
                 returnTypeElm: Optional[ET.Element] = rootChild.find('return_type')
                 if returnTypeElm is None:
                     raise ValueError(
-                        "genetic_programming.py Interpreter.__init__(): The function {} doesn't have a <return_type> element".format(functionName))
+                        "core.py Interpreter.__init__(): The function {} doesn't have a <return_type> element".format(functionName))
                 returnType: Optional[str] = returnTypeElm.text
                 if returnType is None:
                     raise ValueError(
-                        "genetic_programming.py Interpreter.__init__(): The function {} have an empty <return_type> element".format(
+                        "core.py Interpreter.__init__(): The function {} have an empty <return_type> element".format(
                             functionName))
 
                 signature: FunctionSignature = FunctionSignature(parameterTypesList, returnType)
                 self._functionNameToSignatureDict[functionName] = signature
             else:
-                raise ValueError("genetic_programming.py Interpreter.__init__(): An child of the root element has tag '{}'".format(rootChild.tag))
+                raise ValueError("core.py Interpreter.__init__(): An child of the root element has tag '{}'".format(rootChild.tag))
 
     def TypeConverter(self, type: str, value: str) -> Any:
         if type == 'float':
@@ -474,524 +467,3 @@ def ElementsWhoseReturnTypeIs(individual: Individual, returnType: str, interpret
             if functionReturnType == returnType:
                 elementsWithReturnTypeList.append(element)
     return elementsWithReturnTypeList
-
-
-
-
-
-
-
-
-
-class ArithmeticsInterpreter(Interpreter): # An example to follow for other domains
-
-    def FunctionDefinition(self, functionName: str, argumentsList: List[ Union[float, bool] ]) -> Union[float, bool]:
-        if functionName == "addition_float":
-            floatArg1: float = float(argumentsList[0])
-            floatArg2: float = float(argumentsList[1])
-            return floatArg1 + floatArg2
-        elif functionName == "subtraction_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return floatArg1 - floatArg2
-        elif functionName == "multiplication_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return floatArg1 * floatArg2
-        elif functionName == "division_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            if floatArg2 == 0:
-                return 0.0
-            return floatArg1 / floatArg2
-        elif functionName == "greaterThan_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return floatArg1 > floatArg2
-        elif functionName == "greaterThanOrEqual_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return floatArg1 >= floatArg2
-        elif functionName == "lessThan_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return floatArg1 < floatArg2
-        elif functionName == "lessThanOrEqual_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return floatArg1 <= floatArg2
-        elif functionName == "almostEqual_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            floatArg3: float = abs( float(argumentsList[2]) )
-            return abs(floatArg1 - floatArg2) <= floatArg3
-        elif functionName == "inverse_bool":
-            boolArg1: bool = bool(argumentsList[0])
-            return not boolArg1
-        elif functionName == "log":
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 <= 0.0:
-                return 0.0
-            return math.log(floatArg1)
-        elif functionName == "exp":
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 20.0:
-                return 0.0
-            return math.exp(floatArg1)
-        elif functionName == "pow_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            try:
-                result: float = math.pow(floatArg1, floatArg2)
-                return result
-            except:
-                return 0.0
-        elif functionName == 'if_float':
-            boolArg1 = bool(argumentsList[0])
-            floatArg1 = float(argumentsList[1])
-            floatArg2 = float(argumentsList[2])
-            if boolArg1:
-                return floatArg1
-            else:
-                return floatArg2
-        elif functionName == 'sin':
-            try:
-                floatArg1 = float(argumentsList[0])
-                return math.sin(floatArg1)
-            except:
-                return 0.0
-        elif functionName == 'cos':
-            try:
-                floatArg1 = float(argumentsList[0])
-                return math.cos(floatArg1)
-            except:
-                return 0.0
-        elif functionName == 'tan':
-            try:
-                floatArg1 = float(argumentsList[0])
-                return math.tan(floatArg1)
-            except:
-                return 0.0
-        elif functionName == 'atan':
-            floatArg1 = float(argumentsList[0])
-            return math.atan(floatArg1)
-        elif functionName == 'sigmoid':
-            floatArg1 = float(argumentsList[0])
-            try:
-                return 1.0 / (1.0 + math.exp(-floatArg1))
-            except:
-                return 0.0
-        elif functionName == 'ispositive_float':
-            floatArg1 = float(argumentsList[0])
-            return floatArg1 >= 0.0
-        elif functionName == 'inverse_float':
-            floatArg1 = float(argumentsList[0])
-            try:
-                if floatArg1 == 0:
-                    return 0
-                else:
-                    return 1.0/floatArg1
-            except:
-                return 0.0
-        elif functionName == 'isinbetween_float':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            floatArg3 = float(argumentsList[2])
-            if floatArg1 >= floatArg2 and floatArg1 <= floatArg3:
-                return True
-            else:
-                return False
-        elif functionName == 'abs_float':
-            floatArg1 = float(argumentsList[0])
-            return abs(floatArg1)
-        elif functionName == 'relu_float':
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 0:
-                return floatArg1
-            else:
-                return 0.0
-        elif functionName == 'sign_float':
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 < 0:
-                return -1.0
-            elif floatArg1 > 0:
-                return 1.0
-            else:
-                return 0.0
-        elif functionName == 'max_float':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return max(floatArg1, floatArg2)
-        elif functionName == 'min_float':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return min(floatArg1, floatArg2)
-        elif functionName == 'gaussian':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            try:
-                sigma2 = floatArg2 ** 2
-                f = math.exp(-(floatArg1 ** 2)/(2 * sigma2) )
-                return f
-            except:
-                return 0.0
-        elif functionName == 'gaussian_scaled':
-            x = float(argumentsList[0])
-            mu = float(argumentsList[1])
-            sigma = float(argumentsList[2])
-            a = float(argumentsList[3])
-            try:
-                sigma2 = sigma**2
-                return a * math.exp( -((x - mu)**2)/(2 * sigma2) )
-            except:
-                return 0.0
-        elif functionName == 'pow2_float':
-            floatArg1 = float(argumentsList[0])
-            try:
-                return floatArg1 ** 2
-            except:
-                return 0.0
-        elif functionName == 'sqrt':
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 0:
-                return math.sqrt(floatArg1)
-            else:
-                return 0.0
-        elif functionName == 'windowed_linear':
-            x = float(argumentsList[0]) # x
-            alpha = float(argumentsList[1]) # alpha
-            c = float(argumentsList[2]) # c
-            L = float(argumentsList[3]) # L
-            if x >= c - abs(L/2) and x <= c + abs(L/2):
-                return alpha * (x - c)
-            else:
-                return 0
-        elif functionName == 'window':
-            x = float(argumentsList[0])
-            alpha = float(argumentsList[1])
-            c = float(argumentsList[2])
-            L = float(argumentsList[3])
-            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
-                return alpha
-            else:
-                return 0
-        elif functionName == 'ramp_increasing':
-            x = float(argumentsList[0])
-            alpha = float(argumentsList[1])
-            c = float(argumentsList[2])
-            L = float(argumentsList[3])
-            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
-                return alpha * (x - c + abs(L/2))
-            else:
-                return 0
-        elif functionName == 'ramp_decreasing':
-            x = float(argumentsList[0])
-            alpha = float(argumentsList[1])
-            c = float(argumentsList[2])
-            L = float(argumentsList[3])
-            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
-                return -alpha * (x - c - abs(L/2))
-            else:
-                return 0
-
-        else:
-            raise NotImplementedError("ArithmeticsInterpreter.FunctionDefinition(): Not implemented function '{}'".format(functionName))
-
-    def FunctionDerivative(self, functionName: str, argumentsList: List[ Union[float, bool] ]) -> List[ Union[float, bool] ]:
-        if functionName == "addition_float":
-            floatArg1: float = float(argumentsList[0])
-            floatArg2: float = float(argumentsList[1])
-            return [1.0, 1.0]
-        elif functionName == "subtraction_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return [1.0, -1.0]
-        elif functionName == "multiplication_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return [floatArg2 , floatArg1]
-        elif functionName == "division_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            if floatArg2 == 0:
-                return [0.0, 0.0]
-            try:
-                return [1.0/floatArg2, -1.0 * floatArg1/(floatArg2**2)]
-            except:
-                return [0.0, 0.0]
-        elif functionName == "greaterThan_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return [0.0 , 0.0]
-        elif functionName == "greaterThanOrEqual_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return [0.0, 0.0]
-        elif functionName == "lessThan_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return [0.0, 0.0]
-        elif functionName == "lessThanOrEqual_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            return [0.0, 0.0]
-        elif functionName == "almostEqual_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            floatArg3: float = abs(float(argumentsList[2]))
-            return [0.0, 0.0, 0.0]
-        elif functionName == "inverse_bool":
-            boolArg1: bool = bool(argumentsList[0])
-            return [0.0]
-        elif functionName == "log":
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 == 0.0:
-                return [0.0]
-            return [1.0/floatArg1]
-        elif functionName == "exp":
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 20.0:
-                return [0.0]
-            return [math.exp(floatArg1)]
-        elif functionName == "pow_float":
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            try:
-                df_dx1: float = floatArg2 * math.pow(floatArg1, floatArg2 - 1)
-                df_dx2: float = math.pow(floatArg1, floatArg2) * math.log(floatArg1)
-                return [df_dx1, df_dx2]
-            except:
-                return [0.0, 0.0]
-        elif functionName == 'if_float':
-            boolArg1 = bool(argumentsList[0])
-            floatArg1 = float(argumentsList[1])
-            floatArg2 = float(argumentsList[2])
-            if boolArg1:
-                return [0.0, 1.0, 0.0]
-            else:
-                return [0.0, 0.0, 1.0]
-        elif functionName == 'sin':
-            try:
-                floatArg1 = float(argumentsList[0])
-                return [math.cos(floatArg1)]
-            except:
-                return [0.0]
-        elif functionName == 'cos':
-            try:
-                floatArg1 = float(argumentsList[0])
-                return [-math.sin(floatArg1)]
-            except:
-                return [0.0]
-        elif functionName == 'tan':
-            try:
-                floatArg1 = float(argumentsList[0])
-                return [1.0/(math.cos(floatArg1)**2)]
-            except:
-                return [0.0]
-        elif functionName == 'atan':
-            floatArg1 = float(argumentsList[0])
-            try:
-                return [1.0/(1.0 + floatArg1**2)]
-            except:
-                return [0.0]
-        elif functionName == 'sigmoid':
-            floatArg1 = float(argumentsList[0])
-            try:
-                return [ math.exp(-floatArg1) / ( (1.0 + math.exp(-floatArg1))**2 ) ]
-            except:
-                return [0.0]
-        elif functionName == 'ispositive_float':
-            floatArg1 = float(argumentsList[0])
-            return [0.0]
-        elif functionName == 'inverse_float':
-            floatArg1 = float(argumentsList[0])
-            try:
-                if floatArg1 == 0:
-                    return [0.0]
-                else:
-                    return [-1.0 / (floatArg1**2)]
-            except:
-                return [0.0]
-        elif functionName == 'isinbetween_float':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            floatArg3 = float(argumentsList[2])
-            return [0.0, 0.0, 0.0]
-        elif functionName == 'abs_float':
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 0:
-                return [1.0]
-            else:
-                return [-1.0]
-        elif functionName == 'relu_float':
-            floatArg1 = float(argumentsList[0])
-            if floatArg1 >= 0:
-                return [1.0]
-            else:
-                return [0.0]
-        elif functionName == 'sign_float':
-            floatArg1 = float(argumentsList[0])
-            return [0.0]
-        elif functionName == 'max_float':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            if floatArg1 >= floatArg2:
-                return [1.0, 0.0]
-            else:
-                return [0.0, 1.0]
-        elif functionName == 'min_float':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            if floatArg1 <= floatArg2:
-                return [1.0, 0.0]
-            else:
-                return [0.0, 1.0]
-        elif functionName == 'gaussian':
-            floatArg1 = float(argumentsList[0])
-            floatArg2 = float(argumentsList[1])
-            try:
-                sigma2 = floatArg2 ** 2
-                df_dx1 = -math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1/sigma2
-                df_dx2 = math.exp(-(floatArg1 ** 2) / (2 * sigma2)) * floatArg1**2/math.pow(floatArg2, 3.0)
-                return [df_dx1, df_dx2]
-            except:
-                return [0.0, 0.0]
-        elif functionName == 'gaussian_scaled':
-            x = float(argumentsList[0])
-            mu = float(argumentsList[1])
-            sigma = float(argumentsList[2])
-            a = float(argumentsList[3])
-            try:
-                sigma2 = sigma**2
-                df_dx = -a * (x - mu)/sigma2 * math.exp( (-(x - mu)**2)/(2 * sigma2) )
-                df_dmu = a * (x - mu)/sigma2 * math.exp( (-(x - mu)**2)/(2 * sigma2) )
-                df_dsigma = a * ((x - mu)**2)/(math.pow(sigma, 3)) * math.exp( (-(x - mu)**2)/(2 * sigma2) )
-                df_da = math.exp( (-(x - mu)**2)/(2 * sigma2) )
-                return [df_dx, df_dmu, df_dsigma, df_da]
-            except:
-                return [0.0, 0.0, 0.0, 0.0]
-        elif functionName == 'pow2_float':
-            floatArg1 = float(argumentsList[0])
-            return [2.0 * floatArg1]
-        elif functionName == 'sqrt':
-            floatArg1 = float(argumentsList[0])
-            try:
-                return [0.5 * math.pow(floatArg1, -0.5)]
-            except:
-                return [0.0]
-        elif functionName == 'windowed_linear':
-            x = float(argumentsList[0]) # x
-            alpha = float(argumentsList[1]) # alpha
-            c = float(argumentsList[2]) # c
-            L = float(argumentsList[3]) # L
-            if x >= c - abs(L/2) and x <= c + abs(L/2):
-                return [alpha, x - c, -alpha, 0.0]
-            else:
-                return [0, 0, 0, 0]
-        elif functionName == 'window':
-            x = float(argumentsList[0])
-            alpha = float(argumentsList[1])
-            c = float(argumentsList[2])
-            L = float(argumentsList[3])
-            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
-                return [0, 1, 0, 0]
-            else:
-                return [0, 0, 0, 0]
-        elif functionName == 'ramp_increasing':
-            x = float(argumentsList[0])
-            alpha = float(argumentsList[1])
-            c = float(argumentsList[2])
-            L = float(argumentsList[3])
-            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
-                return [alpha, x - c + abs(L)/2, -alpha, alpha/2 * numpy.sign(L)]
-            else:
-                return [0, 0, 0, 0]
-        elif functionName == 'ramp_decreasing':
-            x = float(argumentsList[0])
-            alpha = float(argumentsList[1])
-            c = float(argumentsList[2])
-            L = float(argumentsList[3])
-            if x >= c - abs(L / 2) and x <= c + abs(L / 2):
-                return [-alpha, -(x - c - abs(L)/2), alpha, alpha/2 * numpy.sign(L)]
-            else:
-                return [0, 0, 0, 0]
-        else:
-            raise NotImplementedError("ArithmeticsInterpreter.FunctionDerivative(): Not implemented function '{}'".format(functionName))
-
-
-    def CreateConstant(self, returnType: str, parametersList: Optional[List[Union[float, bool] ]]) -> str:
-        if returnType == 'float':
-            if parametersList is None:
-                raise ValueError("ArithmeticsInterpreter.CreateConstant(): returnType = float; There is no list of parameters")
-            if len(parametersList) != 2:
-                raise ValueError("ArithmeticsInterpreter.CreateConstant(): returnType = float; The length of the list of parameters ({}) is not 2".format(
-                    len(parametersList) ))
-            minValue = float(parametersList[0])
-            maxValue = float(parametersList[1])
-            return str( minValue + (maxValue - minValue) * random.random() )
-        elif returnType == 'bool':
-            if random.random() < 0.5:
-                return 'True'
-            else:
-                return 'False'
-        else:
-            raise NotImplementedError("ArithmeticsInterpreter.CreateConstant(): Not implemented return type '{}'".format(returnType))
-
-    def PossibleTypes(self) -> List[str]:
-        return ['float', 'bool']
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)-15s %(levelname)s %(message)s')
-
-    logging.debug("core.py main()")
-    domainFunctionsTree: ET.ElementTree = ET.parse('../../domains/arithmetics.xml')
-    #print ("domainFunctionsTree = {}".format(domainFunctionsTree))
-
-    individual: Individual = Individual(ET.parse('../../domains/arithmetics_individual_example2.xml') )
-    interpreter: ArithmeticsInterpreter = ArithmeticsInterpreter(domainFunctionsTree)
-    #print ("interpreter._functionNameToSignatureDict = {}".format(interpreter._functionNameToSignatureDict))
-
-    variableNameToTypeDict: Dict[str, str] = {'x': 'float', 'y': 'float', 'cond': 'bool'}
-    variableNameToValueDict: Dict[str, Union[float, bool]] = {'x': 10, 'y': 3.0, 'cond': False}
-
-    output: bool = interpreter.Evaluate(individual, variableNameToTypeDict, variableNameToValueDict, 'bool')
-    print ("output = {}".format(output))
-
-    candidateFunctionsList: List[str] = interpreter.FunctionsWhoseReturnTypeIs('bool')
-    print ("candidateFunctionsList = {}".format(candidateFunctionsList))
-
-    returnType: str = 'float'
-    levelToFunctionProbabilityDict: Dict[int, float] = {0: 1.0, 1: 0.8, 2: 0.5}
-    proportionOfConstants: float = 0.5
-    functionNameToWeightDict: Dict[str, float] = {
-        "addition_float": 1,
-        "subtraction_float": 1,
-        "multiplication_float": 1,
-        "division_float": 1,
-        "greaterThan_float": 1,
-        "greaterThanOrEqual_float": 1,
-        "lessThan_float": 1,
-        "lessThanOrEqual_float": 1,
-        "almostEqual_float": 1,
-        "inverse_bool": 1,
-        "log": 1,
-        "exp": 1,
-        "pow_float": 1,
-        "if_float": 1
-    }
-    constantCreationParametersList: List[Union[float, bool]] = [-100, 100]
-
-
-    createdIndividual = interpreter.CreateIndividual(
-        returnType,
-        levelToFunctionProbabilityDict,
-        proportionOfConstants,
-        constantCreationParametersList,
-        variableNameToTypeDict,
-        functionNameToWeightDict
-    )
-    createdIndividual.Save('./outputs/createdIndividual.xml')
-
-    elementsList: List[ET.Element] = ElementsWhoseReturnTypeIs(createdIndividual, 'float', interpreter, variableNameToTypeDict)
-    for element in elementsList:
-        print("element.tag = {}".format(element.tag))
