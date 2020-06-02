@@ -2,6 +2,7 @@ import genprog.core as gp
 import genprog.evolution as gpevo
 import math
 from typing import Dict, List, Any, Set, Tuple, Optional, Union
+import random
 
 class ArithmeticInterpreter(gp.Interpreter): # An example to follow for other domains
 
