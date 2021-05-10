@@ -3,7 +3,9 @@ import genprog.evolution as gpevo
 import math
 from typing import Dict, List, Any, Set, Tuple, Optional, Union
 import random
+import pandas
 
+possibleTypes = ['float', 'bool']
 class ArithmeticInterpreter(gp.Interpreter): # An example to follow for other domains
 
     def FunctionDefinition(self, functionName: str, argumentsList: List[ Union[float, bool] ]) -> Union[float, bool]:
@@ -459,7 +461,7 @@ class ArithmeticInterpreter(gp.Interpreter): # An example to follow for other do
             raise NotImplementedError("ArithmeticInterpreter.CreateConstant(): Not implemented return type '{}'".format(returnType))
 
     def PossibleTypes(self) -> List[str]:
-        return ['float', 'bool']
+        return possibleTypes
 
 
 
@@ -517,7 +519,54 @@ class ArithmeticPopulation(gpevo.Population): # An example to follow for other d
                     individualToCostDict[individual] = individualToCostDict[individual] + penaltyForNoVariation
 
                 # Add penalty for number of elements
-                numberOfElements = NumberOfElements(individual._tree)
+                numberOfElements = gpevo.NumberOfElements(individual._tree)
                 individualToCostDict[individual] = individualToCostDict[individual] + weightForNumberOfElements * numberOfElements
 
         return individualToCostDict
+
+
+def load_dataset(filepath: str, variableNameToTypeDict: Dict[str, str], outputName:str, outputType: str) -> List[Tuple[Dict[str, Union[float, bool] ], Union[float, bool]]]:
+    dataframe: pandas.core.frame.DataFrame = pandas.read_csv(filepath)
+    # Check that variable names and output name appear in the columns, variable types and output type are possible types
+    for variableName, variableType in variableNameToTypeDict.items():
+        if variableName not in dataframe.columns:
+            raise KeyError("arithmetic.load_dataset(): The variable name '{}' was not found in variableNameToTypeDict: {}".format(variableName, variableNameToTypeDict))
+        if variableType not in possibleTypes:
+            raise TypeError("arithmetic.load_dataset(): The variable type '{}' was not found in possible types: {}".format(variableType, possibleTypes))
+    if outputName not in dataframe.columns:
+        raise KeyError("arithmetic.load_dataset(): The output name '{}' was not found in variableNameToTypeDict: {}".format(outputName, variableNameToTypeDict))
+    if outputType not in possibleTypes:
+        raise TypeError("arithmetic.load_dataset(): The output type '{}' was not found in possible types: {}".format(outputType, possibleTypes))
+
+    dataset: List[Tuple[Dict[str, Union[float, bool] ], Union[float, bool]]] = []
+    # Go through the lines
+    for (index, row) in dataframe.iterrows():
+        variableNameToValueDict: Dict[str, Union[float, bool] ] = {}
+        for variableName, variableType in variableNameToTypeDict.items():
+            value: str = row[variableName]
+            if variableType == 'float':
+                value = float(value)
+            elif variableType == 'bool':
+                if value.lower() == 'true':
+                    value = True
+                elif value.lower() == 'false':
+                    value = False
+                else:
+                    raise ValueError("arithmetic.load_dataset(): Unsupported string for a bool: '{}'".format(value))
+            else:
+                raise ValueError("arithmetic.load_dataset(): Unsupported variable type '{}'".format(variableType))
+            variableNameToValueDict[variableName] = value
+        outputValue: str = row[outputName]
+        if outputType == 'float':
+            outputValue = float(outputValue)
+        elif outputType == 'bool':
+            if outputValue.lower() == 'true':
+                outputValue = True
+            elif outputValue.lower() == 'false':
+                outputValue = False
+            else:
+                raise ValueError("arithmetic.load_dataset(): Unsupported string for a bool: '{}'".format(outputValue))
+        else:
+            raise ValueError("arithmetic.load_dataset(): Unsupported variable type '{}'".format(outputType))
+        dataset.append((variableNameToValueDict, outputValue))
+    return dataset
