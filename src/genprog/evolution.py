@@ -29,7 +29,7 @@ class Population(abc.ABC):
     def SaveIndividuals(self, filepathPrefix: str) -> None:
         for individualNdx in range(len(self._individualsList)):
             filepath: str = filepathPrefix + '_' + str(individualNdx) + '.xml'
-            logging.debug ("Population.SaveIndividuals(): filepath = {}".format(filepath))
+            #logging.debug ("Population.SaveIndividuals(): filepath = {}".format(filepath))
             self._individualsList[individualNdx].Save(filepath)
 
     def Generate(self,
