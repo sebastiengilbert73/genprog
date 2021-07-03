@@ -337,11 +337,13 @@ class Interpreter(abc.ABC):
                 element = ET.Element('constant')
                 constantValueStr = self.CreateConstant(returnType, constantCreationParametersList)
                 element.text = constantValueStr
+                element.set('type', returnType)
                 return element
             else: # A variable
                 element = ET.Element('variable')
                 chosenNdx: int = random.randint(0, len(candidateVariableNamesList) - 1)
                 element.text = candidateVariableNamesList[chosenNdx]
+                element.set('type', returnType)
                 return element
 
     def CreateIndividual(self,
@@ -460,7 +462,9 @@ def ElementsWhoseReturnTypeIs(individual: Individual, returnType: str, interpret
             if variableReturnType == returnType:
                 elementsWithReturnTypeList.append(element)
         elif element.tag == 'constant':
-            pass # Don't list constants, as their type is not known
+            constant_type = element.get('type')
+            if constant_type == returnType:
+                elementsWithReturnTypeList.append(element)
         else: # Function
             functionName: str = element.tag
             functionReturnType: str = interpreter._functionNameToSignatureDict[functionName]._returnType
