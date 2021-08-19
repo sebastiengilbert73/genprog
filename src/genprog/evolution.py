@@ -244,6 +244,9 @@ class Population(abc.ABC):
     def MedianCost(self, individualToCostDict: Dict[genprog.core.Individual, float] ) -> float:
         return statistics.median(individualToCostDict.values())
 
+    def StandardDeviationOfCost(self, individualToCostDict: Dict[genprog.core.Individual, float] ) -> float:
+        return statistics.stdev(individualToCostDict.values())
+
     def Champion(self, individualToCostDict: Dict[genprog.core.Individual, float]) -> Tuple[genprog.core.Individual, float]:
         lowestCost: float = sys.float_info.max
         champion: Optional[genprog.core.Individual] = None
