@@ -28,7 +28,7 @@ def main():
 
 
     # Create an interpreter
-    domainFunctionsTree: ET.ElementTree = ET.parse('../src/genprog/domains/gaussianMixture.xml')
+    domainFunctionsTree: ET.ElementTree = ET.parse('../src/genprog/domains/arithmetic.xml')
     interpreter: gparithm.ArithmeticInterpreter = gparithm.ArithmeticInterpreter(domainFunctionsTree)
 
     # Create the population
